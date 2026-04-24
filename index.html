@@ -203,6 +203,7 @@ async function loadData(dateObj) {
 
   document.getElementById('content').innerHTML = `
     <p class="subtitle">Delivery: ${dateStr} | Belgium (BZN|BE) | 15-min Day-Ahead Market Clearing Prices</p>
+    ${deepBanner}
     ${alertHtml}
     <div class="metrics">
       <div class="metric"><div class="metric-label">Min price</div><div class="metric-value ${mn<0?'danger':''}">${mn.toFixed(2)} EUR</div></div>
@@ -213,7 +214,6 @@ async function loadData(dateObj) {
       <div class="metric"><div class="metric-label">Hours avg <= -10 EUR</div><div class="metric-value ${deepNegHours.length>0?'danger':''}">${deepNegHours.length}</div></div>
     </div>
     ${hrBanner}
-    ${deepBanner}
     <div class="card">
       <div class="card-title">15-min price profile (EUR/MWh)</div>
       <div class="legend">

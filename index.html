@@ -52,9 +52,6 @@ tr.neg-row{background:#fff0f0}
 .ytd-day-row:hover{background:#f5f5f7}
 .ytd-detail{display:none;background:#fafafa}
 .ytd-detail td{padding-left:28px;color:#6e6e73;font-size:12px}
-.filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:10px 14px;background:#f0f0f5;border-radius:8px;font-size:13px}
-.filter-bar button{background:#fff;border:.5px solid #e0e0e5;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:inherit}
-.filter-bar button:hover{background:#e0e0e5}
 </style>
 </head>
 <body>
@@ -418,10 +415,12 @@ function renderYTD(allHours) {
     <p class="subtitle">Year-to-date ${year} | Full hours with average &le; -10 EUR/MWh</p>
     ${metricsHtml}
     <div class="card">
-      <div class="card-title">Negative hours by month <span style="font-weight:400;color:#6e6e73">— click a bar to filter</span></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <button id="ytd-back-btn" style="display:none;background:#fff;border:.5px solid #e0e0e5;border-radius:6px;padding:4px 10px;font-size:13px;cursor:pointer;font-family:inherit" onclick="renderMonthlyChart()">&#8592; All months</button>
+        <div class="card-title" id="ytd-chart-title" style="margin-bottom:0">Negative hours by month <span style="font-weight:400;color:#6e6e73">— click a bar to drill down</span></div>
+      </div>
       <div class="chart-wrap"><canvas id="ytd-chart"></canvas></div>
     </div>
-    <div id="ytd-filter-bar"></div>
     <div class="card">
       <div class="card-title" id="ytd-table-title">Daily breakdown (click a row to expand)</div>
       <table>
@@ -433,10 +432,37 @@ function renderYTD(allHours) {
 
   document.getElementById('retrieved').textContent = 'Scanned: ' + new Date().toISOString().replace(/\.\d+Z/, 'Z');
 
-  if (ytdChart) { ytdChart.destroy(); ytdChart = null; }
-  const barColors = monthValues.map(v => v > 0 ? '#E24B4A' : '#e0e0e5');
   const monthKeys = [];
   for (let m = 0; m < 12; m++) monthKeys.push(`${year}-${pad(m + 1)}`);
+
+  window._ytdByDate = byDate;
+  window._ytdMonthLabels = monthLabels;
+  window._ytdMonthValues = monthValues;
+  window._ytdMonthKeys = monthKeys;
+  window._ytdYear = year;
+
+  renderMonthlyChart();
+
+  document.querySelectorAll('.ytd-day-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const dt = row.dataset.date;
+      document.querySelectorAll(`.ytd-detail[data-parent="${dt}"]`).forEach(r => {
+        r.style.display = r.style.display === 'table-row' ? 'none' : 'table-row';
+      });
+    });
+  });
+}
+
+/* ── Chart drill-down ── */
+window.renderMonthlyChart = function() {
+  if (ytdChart) { ytdChart.destroy(); ytdChart = null; }
+  const monthLabels = window._ytdMonthLabels;
+  const monthValues = window._ytdMonthValues;
+  const monthKeys = window._ytdMonthKeys;
+  const barColors = monthValues.map(v => v > 0 ? '#E24B4A' : '#e0e0e5');
+
+  document.getElementById('ytd-back-btn').style.display = 'none';
+  document.getElementById('ytd-chart-title').innerHTML = 'Negative hours by month <span style="font-weight:400;color:#6e6e73">— click a bar to drill down</span>';
 
   ytdChart = new Chart(document.getElementById('ytd-chart'), {
     type: 'bar',
@@ -450,11 +476,11 @@ function renderYTD(allHours) {
         if (!elements.length) return;
         const idx = elements[0].index;
         if (monthValues[idx] === 0) return;
-        filterYTDTable(monthKeys[idx], monthLabels[idx]);
+        drillDownMonth(monthKeys[idx], monthLabels[idx]);
       },
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ctx.parsed.y + ' hour(s) — click to filter' } }
+        tooltip: { callbacks: { label: ctx => ctx.parsed.y + ' hour(s) — click to drill down' } }
       },
       scales: {
         x: { grid: { display: false }, ticks: { autoSkip: false } },
@@ -462,39 +488,60 @@ function renderYTD(allHours) {
       }
     }
   });
+};
 
-  function filterYTDTable(monthKey, monthName) {
-    const filterBar = document.getElementById('ytd-filter-bar');
-    filterBar.innerHTML = `<div class="filter-bar"><span>Showing: <strong>${monthName} ${year}</strong></span><button onclick="resetYTDFilter()">Show all months</button></div>`;
-    document.getElementById('ytd-table-title').textContent = `Daily breakdown — ${monthName} ${year} (click a row to expand)`;
-    document.querySelectorAll('.ytd-day-row').forEach(row => {
-      const dt = row.dataset.date;
-      const match = dt.startsWith(monthKey);
-      row.style.display = match ? '' : 'none';
-      document.querySelectorAll(`.ytd-detail[data-parent="${dt}"]`).forEach(r => {
-        r.style.display = 'none';
-      });
-    });
+function drillDownMonth(monthKey, monthName) {
+  if (ytdChart) { ytdChart.destroy(); ytdChart = null; }
+  const year = window._ytdYear;
+  const byDate = window._ytdByDate;
+
+  const parts = monthKey.split('-');
+  const m = parseInt(parts[1], 10) - 1;
+  const daysInMonth = new Date(year, m + 1, 0).getDate();
+
+  const dayLabels = [];
+  const dayValues = [];
+  const dayDeepest = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = `${monthKey}-${pad(d)}`;
+    dayLabels.push(d);
+    const entries = byDate[key] || [];
+    dayValues.push(entries.length);
+    dayDeepest.push(entries.length > 0 ? Math.min(...entries.map(e => e.avg)).toFixed(1) : null);
   }
 
-  window.resetYTDFilter = function() {
-    document.getElementById('ytd-filter-bar').innerHTML = '';
-    document.getElementById('ytd-table-title').textContent = 'Daily breakdown (click a row to expand)';
-    document.querySelectorAll('.ytd-day-row').forEach(row => {
-      row.style.display = '';
-    });
-    document.querySelectorAll('.ytd-detail').forEach(r => {
-      r.style.display = 'none';
-    });
-  };
+  const barColors = dayValues.map(v => v > 0 ? '#E24B4A' : '#e0e0e5');
 
-  document.querySelectorAll('.ytd-day-row').forEach(row => {
-    row.addEventListener('click', () => {
-      const dt = row.dataset.date;
-      document.querySelectorAll(`.ytd-detail[data-parent="${dt}"]`).forEach(r => {
-        r.style.display = r.style.display === 'table-row' ? 'none' : 'table-row';
-      });
-    });
+  document.getElementById('ytd-back-btn').style.display = '';
+  document.getElementById('ytd-chart-title').innerHTML = `${monthName} ${year} — negative hours per day`;
+
+  ytdChart = new Chart(document.getElementById('ytd-chart'), {
+    type: 'bar',
+    data: {
+      labels: dayLabels,
+      datasets: [{ data: dayValues, backgroundColor: barColors, borderRadius: 3, barPercentage: 0.7 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: ctx => `${monthName} ${ctx[0].label}`,
+            label: ctx => {
+              const v = ctx.parsed.y;
+              if (v === 0) return 'No negative hours';
+              const deep = dayDeepest[ctx.dataIndex];
+              return v + ' hour(s) | deepest avg: ' + deep + ' EUR/MWh';
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { autoSkip: false, callback: (v, i) => (dayLabels[i] % 5 === 1 || dayLabels[i] === 1) ? dayLabels[i] : '' }, title: { display: true, text: 'Day of month' } },
+        y: { beginAtZero: true, ticks: { stepSize: 1, callback: v => Number.isInteger(v) ? v : '' }, title: { display: true, text: 'Full hours' } }
+      }
+    }
   });
 }
 

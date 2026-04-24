@@ -52,6 +52,9 @@ tr.neg-row{background:#fff0f0}
 .ytd-day-row:hover{background:#f5f5f7}
 .ytd-detail{display:none;background:#fafafa}
 .ytd-detail td{padding-left:28px;color:#6e6e73;font-size:12px}
+.filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:10px 14px;background:#f0f0f5;border-radius:8px;font-size:13px}
+.filter-bar button{background:#fff;border:.5px solid #e0e0e5;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:inherit}
+.filter-bar button:hover{background:#e0e0e5}
 </style>
 </head>
 <body>
@@ -415,11 +418,12 @@ function renderYTD(allHours) {
     <p class="subtitle">Year-to-date ${year} | Full hours with average &le; -10 EUR/MWh</p>
     ${metricsHtml}
     <div class="card">
-      <div class="card-title">Negative hours by month</div>
+      <div class="card-title">Negative hours by month <span style="font-weight:400;color:#6e6e73">— click a bar to filter</span></div>
       <div class="chart-wrap"><canvas id="ytd-chart"></canvas></div>
     </div>
+    <div id="ytd-filter-bar"></div>
     <div class="card">
-      <div class="card-title">Daily breakdown (click a row to expand)</div>
+      <div class="card-title" id="ytd-table-title">Daily breakdown (click a row to expand)</div>
       <table>
         <thead><tr><th>Date</th><th>Day</th><th>Hours</th><th>Deepest avg</th><th>Time slots</th></tr></thead>
         <tbody>${tableRows}</tbody>
@@ -431,6 +435,9 @@ function renderYTD(allHours) {
 
   if (ytdChart) { ytdChart.destroy(); ytdChart = null; }
   const barColors = monthValues.map(v => v > 0 ? '#E24B4A' : '#e0e0e5');
+  const monthKeys = [];
+  for (let m = 0; m < 12; m++) monthKeys.push(`${year}-${pad(m + 1)}`);
+
   ytdChart = new Chart(document.getElementById('ytd-chart'), {
     type: 'bar',
     data: {
@@ -439,9 +446,15 @@ function renderYTD(allHours) {
     },
     options: {
       responsive: true, maintainAspectRatio: false,
+      onClick: (evt, elements) => {
+        if (!elements.length) return;
+        const idx = elements[0].index;
+        if (monthValues[idx] === 0) return;
+        filterYTDTable(monthKeys[idx], monthLabels[idx]);
+      },
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ctx.parsed.y + ' hour(s)' } }
+        tooltip: { callbacks: { label: ctx => ctx.parsed.y + ' hour(s) — click to filter' } }
       },
       scales: {
         x: { grid: { display: false }, ticks: { autoSkip: false } },
@@ -449,6 +462,31 @@ function renderYTD(allHours) {
       }
     }
   });
+
+  function filterYTDTable(monthKey, monthName) {
+    const filterBar = document.getElementById('ytd-filter-bar');
+    filterBar.innerHTML = `<div class="filter-bar"><span>Showing: <strong>${monthName} ${year}</strong></span><button onclick="resetYTDFilter()">Show all months</button></div>`;
+    document.getElementById('ytd-table-title').textContent = `Daily breakdown — ${monthName} ${year} (click a row to expand)`;
+    document.querySelectorAll('.ytd-day-row').forEach(row => {
+      const dt = row.dataset.date;
+      const match = dt.startsWith(monthKey);
+      row.style.display = match ? '' : 'none';
+      document.querySelectorAll(`.ytd-detail[data-parent="${dt}"]`).forEach(r => {
+        r.style.display = 'none';
+      });
+    });
+  }
+
+  window.resetYTDFilter = function() {
+    document.getElementById('ytd-filter-bar').innerHTML = '';
+    document.getElementById('ytd-table-title').textContent = 'Daily breakdown (click a row to expand)';
+    document.querySelectorAll('.ytd-day-row').forEach(row => {
+      row.style.display = '';
+    });
+    document.querySelectorAll('.ytd-detail').forEach(r => {
+      r.style.display = 'none';
+    });
+  };
 
   document.querySelectorAll('.ytd-day-row').forEach(row => {
     row.addEventListener('click', () => {

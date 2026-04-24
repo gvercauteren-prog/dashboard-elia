@@ -297,62 +297,87 @@ function processDayForYTD(dateObj, data) {
   return result;
 }
 
-async function loadYTD() {
-  document.getElementById('date-label').textContent = '';
-  if (chart) { chart.destroy(); chart = null; }
-  if (ytdChart) { ytdChart.destroy(); ytdChart = null; }
-
-  if (ytdCache) {
-    renderYTD(ytdCache);
-    return;
-  }
-
-  const today = new Date();
-  const year = today.getFullYear();
+async function scanYear(year, endDate, progressCb) {
   const start = new Date(year, 0, 1);
-  const end = new Date(today);
-  end.setDate(end.getDate() + 1);
-
+  const end = new Date(endDate);
   const days = [];
   const d = new Date(start);
   while (d <= end) {
     days.push(new Date(d));
     d.setDate(d.getDate() + 1);
   }
-
-  document.getElementById('content').innerHTML = `
-    <p class="subtitle">Scanning ${days.length} days for full hours with avg &le; -10 EUR/MWh...</p>
-    <div class="progress-bar-outer"><div class="progress-bar-inner" id="ytd-progress" style="width:0%"></div></div>
-    <div id="ytd-progress-text" style="font-size:13px;color:#6e6e73;text-align:center;margin-top:8px;">0 / ${days.length} days</div>
-  `;
-
   const allHours = [];
   let done = 0;
   const batchSize = 10;
-
   for (let i = 0; i < days.length; i += batchSize) {
     const batch = days.slice(i, i + batchSize);
     const results = await Promise.all(batch.map(async (day) => {
-      const dateStr = fmtDate(day);
-      const data = await fetchDay(dateStr);
+      const data = await fetchDay(fmtDate(day));
       return processDayForYTD(day, data);
     }));
     for (const r of results) allHours.push(...r);
     done += batch.length;
-    const pct = Math.round(done / days.length * 100);
+    if (progressCb) progressCb(done, days.length, allHours.length);
+  }
+  return allHours;
+}
+
+async function loadYTD() {
+  document.getElementById('date-label').textContent = '';
+  if (chart) { chart.destroy(); chart = null; }
+  if (ytdChart) { ytdChart.destroy(); ytdChart = null; }
+
+  if (ytdCache) {
+    renderYTD(ytdCache.current, ytdCache.prev);
+    return;
+  }
+
+  const today = new Date();
+  const year = today.getFullYear();
+  const prevYear = year - 1;
+  const prevEndDate = new Date(prevYear, today.getMonth(), today.getDate() + 1);
+
+  const totalCurrentDays = Math.ceil((new Date(today.getTime() + 86400000) - new Date(year, 0, 1)) / 86400000);
+  const totalPrevDays = Math.ceil((prevEndDate - new Date(prevYear, 0, 1)) / 86400000);
+  const totalDays = totalCurrentDays + totalPrevDays;
+
+  document.getElementById('content').innerHTML = `
+    <p class="subtitle">Scanning ${year} and ${prevYear} (same period) for full hours with avg &le; -10 EUR/MWh...</p>
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="ytd-progress" style="width:0%"></div></div>
+    <div id="ytd-progress-text" style="font-size:13px;color:#6e6e73;text-align:center;margin-top:8px;">0 / ${totalDays} days</div>
+  `;
+
+  let globalDone = 0;
+  const updateProgress = (found) => {
+    const pct = Math.round(globalDone / totalDays * 100);
     const bar = document.getElementById('ytd-progress');
     const txt = document.getElementById('ytd-progress-text');
     if (bar) bar.style.width = pct + '%';
-    if (txt) txt.textContent = `${done} / ${days.length} days (${allHours.length} negative hours found)`;
-  }
+    if (txt) txt.textContent = `${globalDone} / ${totalDays} days (${found} negative hours found)`;
+  };
 
-  ytdCache = allHours;
-  renderYTD(allHours);
+  const prevHours = await scanYear(prevYear, prevEndDate, (done, total, found) => {
+    globalDone = done;
+    updateProgress(found);
+  });
+
+  const prevDone = globalDone;
+  const currentEnd = new Date(today);
+  currentEnd.setDate(currentEnd.getDate() + 1);
+  const currentHours = await scanYear(year, currentEnd, (done, total, found) => {
+    globalDone = prevDone + done;
+    updateProgress(prevHours.length + found);
+  });
+
+  ytdCache = { current: currentHours, prev: prevHours };
+  renderYTD(currentHours, prevHours);
 }
 
-function renderYTD(allHours) {
+function renderYTD(allHours, prevYearHours) {
   const year = new Date().getFullYear();
+  const prevYear = year - 1;
   const totalHours = allHours.length;
+  const prevTotalHours = prevYearHours ? prevYearHours.length : 0;
   const deepest = totalHours > 0 ? Math.min(...allHours.map(h => h.avg)) : 0;
 
   const byDate = {};
@@ -363,29 +388,51 @@ function renderYTD(allHours) {
   const daysAffected = Object.keys(byDate).length;
   const sortedDates = Object.keys(byDate).sort();
 
+  const prevByDate = {};
+  if (prevYearHours) {
+    for (const h of prevYearHours) {
+      if (!prevByDate[h.date]) prevByDate[h.date] = [];
+      prevByDate[h.date].push(h);
+    }
+  }
+
   const byMonth = {};
   for (const h of allHours) {
-    const m = h.date.slice(0, 7);
+    const m = h.date.slice(5, 7);
     if (!byMonth[m]) byMonth[m] = 0;
     byMonth[m]++;
   }
+  const prevByMonth = {};
+  if (prevYearHours) {
+    for (const h of prevYearHours) {
+      const m = h.date.slice(5, 7);
+      if (!prevByMonth[m]) prevByMonth[m] = 0;
+      prevByMonth[m]++;
+    }
+  }
+
+  const diff = totalHours - prevTotalHours;
+  const diffLabel = diff > 0 ? `+${diff} vs ${prevYear}` : diff < 0 ? `${diff} vs ${prevYear}` : `same as ${prevYear}`;
+  const diffColor = diff > 0 ? 'danger' : '';
 
   let metricsHtml = `
     <div class="metrics">
-      <div class="metric"><div class="metric-label">Total hours avg &le; -10</div><div class="metric-value danger">${totalHours}</div></div>
-      <div class="metric"><div class="metric-label">Days affected</div><div class="metric-value">${daysAffected}</div></div>
+      <div class="metric"><div class="metric-label">Total hours avg &le; -10 (${year})</div><div class="metric-value danger">${totalHours}</div></div>
+      <div class="metric"><div class="metric-label">Same period ${prevYear}</div><div class="metric-value">${prevTotalHours}</div></div>
       <div class="metric"><div class="metric-label">Deepest hour avg</div><div class="metric-value danger">${deepest.toFixed(0)} EUR</div></div>
-      <div class="metric"><div class="metric-label">Avg per affected day</div><div class="metric-value">${daysAffected > 0 ? (totalHours / daysAffected).toFixed(1) : '0'}</div></div>
+      <div class="metric"><div class="metric-label">YoY change</div><div class="metric-value ${diffColor}">${diffLabel}</div></div>
     </div>
   `;
 
   const monthLabels = [];
   const monthValues = [];
+  const prevMonthValues = [];
   for (let m = 0; m < 12; m++) {
-    const key = `${year}-${pad(m + 1)}`;
+    const mm = pad(m + 1);
     const name = new Date(year, m, 1).toLocaleString('en', { month: 'short' });
     monthLabels.push(name);
-    monthValues.push(byMonth[key] || 0);
+    monthValues.push(byMonth[mm] || 0);
+    prevMonthValues.push(prevByMonth[mm] || 0);
   }
 
   let tableRows = '';
@@ -419,10 +466,14 @@ function renderYTD(allHours) {
         <button id="ytd-back-btn" style="display:none;background:#fff;border:.5px solid #e0e0e5;border-radius:6px;padding:4px 10px;font-size:13px;cursor:pointer;font-family:inherit" onclick="renderMonthlyChart()">&#8592; All months</button>
         <div class="card-title" id="ytd-chart-title" style="margin-bottom:0">Negative hours by month <span style="font-weight:400;color:#6e6e73">— click a bar to drill down</span></div>
       </div>
+      <div class="legend" id="ytd-chart-legend">
+        <span><span class="legend-dot" style="background:#E24B4A"></span>${year}</span>
+        <span><span class="legend-dot" style="background:#85B7EB"></span>${prevYear} (same period)</span>
+      </div>
       <div class="chart-wrap"><canvas id="ytd-chart"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title" id="ytd-table-title">Daily breakdown (click a row to expand)</div>
+      <div class="card-title" id="ytd-table-title">Daily breakdown ${year} (click a row to expand)</div>
       <table>
         <thead><tr><th>Date</th><th>Day</th><th>Hours</th><th>Deepest avg</th><th>Time slots</th></tr></thead>
         <tbody>${tableRows}</tbody>
@@ -433,13 +484,16 @@ function renderYTD(allHours) {
   document.getElementById('retrieved').textContent = 'Scanned: ' + new Date().toISOString().replace(/\.\d+Z/, 'Z');
 
   const monthKeys = [];
-  for (let m = 0; m < 12; m++) monthKeys.push(`${year}-${pad(m + 1)}`);
+  for (let m = 0; m < 12; m++) monthKeys.push(pad(m + 1));
 
   window._ytdByDate = byDate;
+  window._ytdPrevByDate = prevByDate;
   window._ytdMonthLabels = monthLabels;
   window._ytdMonthValues = monthValues;
+  window._ytdPrevMonthValues = prevMonthValues;
   window._ytdMonthKeys = monthKeys;
   window._ytdYear = year;
+  window._ytdPrevYear = prevYear;
 
   renderMonthlyChart();
 
@@ -458,29 +512,38 @@ window.renderMonthlyChart = function() {
   if (ytdChart) { ytdChart.destroy(); ytdChart = null; }
   const monthLabels = window._ytdMonthLabels;
   const monthValues = window._ytdMonthValues;
+  const prevMonthValues = window._ytdPrevMonthValues;
   const monthKeys = window._ytdMonthKeys;
-  const barColors = monthValues.map(v => v > 0 ? '#E24B4A' : '#e0e0e5');
+  const year = window._ytdYear;
+  const prevYear = window._ytdPrevYear;
 
   document.getElementById('ytd-back-btn').style.display = 'none';
   document.getElementById('ytd-chart-title').innerHTML = 'Negative hours by month <span style="font-weight:400;color:#6e6e73">— click a bar to drill down</span>';
+  document.getElementById('ytd-chart-legend').innerHTML = `
+    <span><span class="legend-dot" style="background:#E24B4A"></span>${year}</span>
+    <span><span class="legend-dot" style="background:#85B7EB"></span>${prevYear} (same period)</span>
+  `;
 
   ytdChart = new Chart(document.getElementById('ytd-chart'), {
     type: 'bar',
     data: {
       labels: monthLabels,
-      datasets: [{ data: monthValues, backgroundColor: barColors, borderRadius: 4, barPercentage: 0.6 }]
+      datasets: [
+        { label: String(year), data: monthValues, backgroundColor: '#E24B4A', borderRadius: 4, barPercentage: 0.8, categoryPercentage: 0.6 },
+        { label: String(prevYear), data: prevMonthValues, backgroundColor: '#85B7EB', borderRadius: 4, barPercentage: 0.8, categoryPercentage: 0.6 }
+      ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       onClick: (evt, elements) => {
         if (!elements.length) return;
         const idx = elements[0].index;
-        if (monthValues[idx] === 0) return;
+        if (monthValues[idx] === 0 && prevMonthValues[idx] === 0) return;
         drillDownMonth(monthKeys[idx], monthLabels[idx]);
       },
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ctx.parsed.y + ' hour(s) — click to drill down' } }
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + ' hour(s)' } }
       },
       scales: {
         x: { grid: { display: false }, ticks: { autoSkip: false } },
@@ -493,33 +556,45 @@ window.renderMonthlyChart = function() {
 function drillDownMonth(monthKey, monthName) {
   if (ytdChart) { ytdChart.destroy(); ytdChart = null; }
   const year = window._ytdYear;
+  const prevYear = window._ytdPrevYear;
   const byDate = window._ytdByDate;
+  const prevByDate = window._ytdPrevByDate;
 
-  const parts = monthKey.split('-');
-  const m = parseInt(parts[1], 10) - 1;
-  const daysInMonth = new Date(year, m + 1, 0).getDate();
+  const m = parseInt(monthKey, 10) - 1;
+  const daysInMonth = Math.max(new Date(year, m + 1, 0).getDate(), new Date(prevYear, m + 1, 0).getDate());
 
   const dayLabels = [];
   const dayValues = [];
+  const prevDayValues = [];
   const dayDeepest = [];
+  const prevDayDeepest = [];
   for (let d = 1; d <= daysInMonth; d++) {
-    const key = `${monthKey}-${pad(d)}`;
+    const key = `${year}-${monthKey}-${pad(d)}`;
+    const prevKey = `${prevYear}-${monthKey}-${pad(d)}`;
     dayLabels.push(d);
     const entries = byDate[key] || [];
+    const prevEntries = prevByDate[prevKey] || [];
     dayValues.push(entries.length);
+    prevDayValues.push(prevEntries.length);
     dayDeepest.push(entries.length > 0 ? Math.min(...entries.map(e => e.avg)).toFixed(1) : null);
+    prevDayDeepest.push(prevEntries.length > 0 ? Math.min(...prevEntries.map(e => e.avg)).toFixed(1) : null);
   }
 
-  const barColors = dayValues.map(v => v > 0 ? '#E24B4A' : '#e0e0e5');
-
   document.getElementById('ytd-back-btn').style.display = '';
-  document.getElementById('ytd-chart-title').innerHTML = `${monthName} ${year} — negative hours per day`;
+  document.getElementById('ytd-chart-title').innerHTML = `${monthName} — negative hours per day`;
+  document.getElementById('ytd-chart-legend').innerHTML = `
+    <span><span class="legend-dot" style="background:#E24B4A"></span>${year}</span>
+    <span><span class="legend-dot" style="background:#85B7EB"></span>${prevYear}</span>
+  `;
 
   ytdChart = new Chart(document.getElementById('ytd-chart'), {
     type: 'bar',
     data: {
       labels: dayLabels,
-      datasets: [{ data: dayValues, backgroundColor: barColors, borderRadius: 3, barPercentage: 0.7 }]
+      datasets: [
+        { label: String(year), data: dayValues, backgroundColor: '#E24B4A', borderRadius: 3, barPercentage: 0.8, categoryPercentage: 0.7 },
+        { label: String(prevYear), data: prevDayValues, backgroundColor: '#85B7EB', borderRadius: 3, barPercentage: 0.8, categoryPercentage: 0.7 }
+      ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
@@ -530,9 +605,11 @@ function drillDownMonth(monthKey, monthName) {
             title: ctx => `${monthName} ${ctx[0].label}`,
             label: ctx => {
               const v = ctx.parsed.y;
-              if (v === 0) return 'No negative hours';
-              const deep = dayDeepest[ctx.dataIndex];
-              return v + ' hour(s) | deepest avg: ' + deep + ' EUR/MWh';
+              const isCurrentYear = ctx.datasetIndex === 0;
+              const yr = isCurrentYear ? year : prevYear;
+              if (v === 0) return `${yr}: no negative hours`;
+              const deep = isCurrentYear ? dayDeepest[ctx.dataIndex] : prevDayDeepest[ctx.dataIndex];
+              return `${yr}: ${v} hour(s) | deepest avg: ${deep} EUR/MWh`;
             }
           }
         }

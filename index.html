@@ -11,7 +11,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .container{max-width:960px;margin:0 auto}
 h2{font-size:20px;font-weight:500;margin-bottom:4px}
 .subtitle{font-size:13px;color:#6e6e73;margin-bottom:24px}
-.date-nav{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.date-nav{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
 .date-nav button{background:#fff;border:.5px solid #e0e0e5;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;font-family:inherit}
 .date-nav button:hover{background:#f0f0f5}
 .date-nav button.active{background:#1d1d1f;color:#fff;border-color:#1d1d1f}
@@ -32,7 +32,7 @@ h2{font-size:20px;font-weight:500;margin-bottom:4px}
 .metric-value.danger{color:#a32d2d}
 .card{background:#fff;border-radius:12px;border:.5px solid #e0e0e5;padding:16px 18px;margin-bottom:20px}
 .card-title{font-size:13px;font-weight:500;margin-bottom:12px}
-.legend{display:flex;gap:14px;margin-bottom:12px;font-size:12px;color:#6e6e73;align-items:center}
+.legend{display:flex;gap:14px;margin-bottom:12px;font-size:12px;color:#6e6e73;align-items:center;flex-wrap:wrap}
 .legend-dot{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:4px}
 .chart-wrap{position:relative;width:100%;height:260px}
 table{width:100%;border-collapse:collapse;font-size:13px}
@@ -46,6 +46,12 @@ tr.neg-row{background:#fff0f0}
 .footer{font-size:12px;color:#6e6e73;border-top:.5px solid #e0e0e5;padding-top:14px;display:flex;flex-wrap:wrap;gap:16px}
 .loading{text-align:center;padding:60px 20px;color:#6e6e73;font-size:15px}
 .error{text-align:center;padding:60px 20px;color:#a32d2d;font-size:15px}
+.progress-bar-outer{width:100%;height:6px;background:#e0e0e5;border-radius:3px;margin:12px 0}
+.progress-bar-inner{height:100%;background:#1d1d1f;border-radius:3px;transition:width .2s}
+.ytd-day-row{cursor:pointer}
+.ytd-day-row:hover{background:#f5f5f7}
+.ytd-detail{display:none;background:#fafafa}
+.ytd-detail td{padding-left:28px;color:#6e6e73;font-size:12px}
 </style>
 </head>
 <body>
@@ -54,6 +60,7 @@ tr.neg-row{background:#fff0f0}
   <div class="date-nav">
     <button id="btn-today">Today</button>
     <button id="btn-tomorrow">Tomorrow</button>
+    <button id="btn-ytd">YTD Negative Hours</button>
     <span id="date-label"></span>
   </div>
   <div id="content"><div class="loading">Loading prices...</div></div>
@@ -64,6 +71,7 @@ tr.neg-row{background:#fff0f0}
 </div>
 <script>
 let chart = null;
+let ytdChart = null;
 
 function beOffset(d) {
   const year = d.getFullYear();
@@ -76,6 +84,7 @@ function beOffset(d) {
 }
 
 function pad(n) { return String(n).padStart(2, '0'); }
+function fmtDate(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
 
 function badge(p) {
   if (p < 0) return '<span class="badge badge-neg">Negative</span>';
@@ -83,12 +92,9 @@ function badge(p) {
   return '<span class="badge badge-ok">Normal</span>';
 }
 
+/* ── Daily view ── */
 async function loadData(dateObj) {
-  const yyyy = dateObj.getFullYear();
-  const mm = pad(dateObj.getMonth() + 1);
-  const dd = pad(dateObj.getDate());
-  const dateStr = `${yyyy}-${mm}-${dd}`;
-
+  const dateStr = fmtDate(dateObj);
   document.getElementById('date-label').textContent = dateStr;
   document.getElementById('content').innerHTML = '<div class="loading">Loading prices...</div>';
   document.getElementById('retrieved').textContent = '';
@@ -140,7 +146,6 @@ async function loadData(dateObj) {
   const neg = qp.filter(p => p.price < 0);
   const negCount = neg.length;
 
-  // Sustained negative runs >= 1h
   const runs = [];
   let i = 0;
   while (i < qp.length) {
@@ -153,7 +158,6 @@ async function loadData(dateObj) {
   }
   const hrRuns = runs.filter(r => r.length >= 4);
 
-  // Full hours with avg <= -10
   const hourly = {};
   for (const p of qp) {
     if (!hourly[p.hour]) hourly[p.hour] = [];
@@ -170,7 +174,6 @@ async function loadData(dateObj) {
     }
   }
 
-  // Build HTML
   let alertHtml;
   if (negCount > 0) {
     const chips = neg.map(p => `<span class="chip">${p.label}: ${p.price.toFixed(2)} EUR</span>`).join(' ');
@@ -232,8 +235,8 @@ async function loadData(dateObj) {
 
   document.getElementById('retrieved').textContent = 'Retrieved: ' + new Date().toISOString().replace(/\.\d+Z/, 'Z');
 
-  // Chart
-  if (chart) chart.destroy();
+  if (chart) { chart.destroy(); chart = null; }
+  if (ytdChart) { ytdChart.destroy(); ytdChart = null; }
   const labels = qp.map(p => p.label);
   const vals = qp.map(p => p.price);
   const colors = vals.map(v => v < 0 ? '#E24B4A' : v < 20 ? '#EF9F27' : '#1D9E75');
@@ -251,26 +254,230 @@ async function loadData(dateObj) {
   });
 }
 
-// Navigation
+/* ── YTD view ── */
+let ytdCache = null;
+
+async function fetchDay(dateStr) {
+  const url = `https://griddata.elia.be/eliabecontrols.prod/interface/Interconnections/daily/auctionresultsqh/${dateStr}`;
+  try {
+    const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    return await resp.json();
+  } catch { return []; }
+}
+
+function processDayForYTD(dateObj, data) {
+  const slots = data.filter(s => s.isVisible !== false);
+  if (!slots.length) return [];
+
+  const offset = beOffset(dateObj);
+  const hourly = {};
+  for (const s of slots) {
+    const dt = new Date(s.dateTime);
+    const local = new Date(dt.getTime() + offset * 3600000);
+    const dLocal = new Date(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate());
+    if (dLocal.getFullYear() === dateObj.getFullYear() &&
+        dLocal.getMonth() === dateObj.getMonth() &&
+        dLocal.getDate() === dateObj.getDate()) {
+      const h = local.getUTCHours();
+      if (!hourly[h]) hourly[h] = [];
+      hourly[h].push(Math.round(parseFloat(s.price) * 100) / 100);
+    }
+  }
+
+  const result = [];
+  for (const h of Object.keys(hourly).map(Number).sort((a, b) => a - b)) {
+    if (hourly[h].length === 4) {
+      const avg = Math.round(hourly[h].reduce((a, b) => a + b, 0) / 4 * 100) / 100;
+      if (avg <= -10) {
+        const label = h < 23 ? `${pad(h)}:00-${pad(h+1)}:00` : '23:00-00:00';
+        result.push({ date: fmtDate(dateObj), hour: h, label, avg, prices: hourly[h] });
+      }
+    }
+  }
+  return result;
+}
+
+async function loadYTD() {
+  document.getElementById('date-label').textContent = '';
+  if (chart) { chart.destroy(); chart = null; }
+  if (ytdChart) { ytdChart.destroy(); ytdChart = null; }
+
+  if (ytdCache) {
+    renderYTD(ytdCache);
+    return;
+  }
+
+  const today = new Date();
+  const year = today.getFullYear();
+  const start = new Date(year, 0, 1);
+  const end = new Date(today);
+  end.setDate(end.getDate() + 1);
+
+  const days = [];
+  const d = new Date(start);
+  while (d <= end) {
+    days.push(new Date(d));
+    d.setDate(d.getDate() + 1);
+  }
+
+  document.getElementById('content').innerHTML = `
+    <p class="subtitle">Scanning ${days.length} days for full hours with avg &le; -10 EUR/MWh...</p>
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="ytd-progress" style="width:0%"></div></div>
+    <div id="ytd-progress-text" style="font-size:13px;color:#6e6e73;text-align:center;margin-top:8px;">0 / ${days.length} days</div>
+  `;
+
+  const allHours = [];
+  let done = 0;
+  const batchSize = 10;
+
+  for (let i = 0; i < days.length; i += batchSize) {
+    const batch = days.slice(i, i + batchSize);
+    const results = await Promise.all(batch.map(async (day) => {
+      const dateStr = fmtDate(day);
+      const data = await fetchDay(dateStr);
+      return processDayForYTD(day, data);
+    }));
+    for (const r of results) allHours.push(...r);
+    done += batch.length;
+    const pct = Math.round(done / days.length * 100);
+    const bar = document.getElementById('ytd-progress');
+    const txt = document.getElementById('ytd-progress-text');
+    if (bar) bar.style.width = pct + '%';
+    if (txt) txt.textContent = `${done} / ${days.length} days (${allHours.length} negative hours found)`;
+  }
+
+  ytdCache = allHours;
+  renderYTD(allHours);
+}
+
+function renderYTD(allHours) {
+  const year = new Date().getFullYear();
+  const totalHours = allHours.length;
+  const deepest = totalHours > 0 ? Math.min(...allHours.map(h => h.avg)) : 0;
+
+  const byDate = {};
+  for (const h of allHours) {
+    if (!byDate[h.date]) byDate[h.date] = [];
+    byDate[h.date].push(h);
+  }
+  const daysAffected = Object.keys(byDate).length;
+  const sortedDates = Object.keys(byDate).sort();
+
+  const byMonth = {};
+  for (const h of allHours) {
+    const m = h.date.slice(0, 7);
+    if (!byMonth[m]) byMonth[m] = 0;
+    byMonth[m]++;
+  }
+
+  let metricsHtml = `
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">Total hours avg &le; -10</div><div class="metric-value danger">${totalHours}</div></div>
+      <div class="metric"><div class="metric-label">Days affected</div><div class="metric-value">${daysAffected}</div></div>
+      <div class="metric"><div class="metric-label">Deepest hour avg</div><div class="metric-value danger">${deepest.toFixed(0)} EUR</div></div>
+      <div class="metric"><div class="metric-label">Avg per affected day</div><div class="metric-value">${daysAffected > 0 ? (totalHours / daysAffected).toFixed(1) : '0'}</div></div>
+    </div>
+  `;
+
+  const monthLabels = [];
+  const monthValues = [];
+  for (let m = 0; m < 12; m++) {
+    const key = `${year}-${pad(m + 1)}`;
+    const name = new Date(year, m, 1).toLocaleString('en', { month: 'short' });
+    monthLabels.push(name);
+    monthValues.push(byMonth[key] || 0);
+  }
+
+  let tableRows = '';
+  for (const dt of sortedDates) {
+    const entries = byDate[dt];
+    const dayDeepest = Math.min(...entries.map(e => e.avg));
+    const dayName = new Date(dt + 'T12:00:00').toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' });
+    tableRows += `<tr class="ytd-day-row" data-date="${dt}">
+      <td>${dt}</td>
+      <td>${dayName}</td>
+      <td style="font-weight:500">${entries.length}</td>
+      <td class="danger" style="font-weight:500">${dayDeepest.toFixed(2)}</td>
+      <td>${entries.map(e => e.label).join(', ')}</td>
+    </tr>`;
+    for (const e of entries) {
+      tableRows += `<tr class="ytd-detail" data-parent="${dt}">
+        <td></td>
+        <td></td>
+        <td>${e.label}</td>
+        <td>${e.avg.toFixed(2)} EUR/MWh</td>
+        <td>Slots: ${e.prices.map(p => p.toFixed(2)).join(', ')}</td>
+      </tr>`;
+    }
+  }
+
+  document.getElementById('content').innerHTML = `
+    <p class="subtitle">Year-to-date ${year} | Full hours with average &le; -10 EUR/MWh</p>
+    ${metricsHtml}
+    <div class="card">
+      <div class="card-title">Negative hours by month</div>
+      <div class="chart-wrap"><canvas id="ytd-chart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Daily breakdown (click a row to expand)</div>
+      <table>
+        <thead><tr><th>Date</th><th>Day</th><th>Hours</th><th>Deepest avg</th><th>Time slots</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>
+  `;
+
+  document.getElementById('retrieved').textContent = 'Scanned: ' + new Date().toISOString().replace(/\.\d+Z/, 'Z');
+
+  if (ytdChart) { ytdChart.destroy(); ytdChart = null; }
+  const barColors = monthValues.map(v => v > 0 ? '#E24B4A' : '#e0e0e5');
+  ytdChart = new Chart(document.getElementById('ytd-chart'), {
+    type: 'bar',
+    data: {
+      labels: monthLabels,
+      datasets: [{ data: monthValues, backgroundColor: barColors, borderRadius: 4, barPercentage: 0.6 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ctx.parsed.y + ' hour(s)' } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { autoSkip: false } },
+        y: { beginAtZero: true, ticks: { stepSize: 1, callback: v => Number.isInteger(v) ? v : '' }, title: { display: true, text: 'Full hours' } }
+      }
+    }
+  });
+
+  document.querySelectorAll('.ytd-day-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const dt = row.dataset.date;
+      document.querySelectorAll(`.ytd-detail[data-parent="${dt}"]`).forEach(r => {
+        r.style.display = r.style.display === 'table-row' ? 'none' : 'table-row';
+      });
+    });
+  });
+}
+
+/* ── Navigation ── */
 const today = new Date();
 const tomorrow = new Date(today);
 tomorrow.setDate(tomorrow.getDate() + 1);
 
 const btnToday = document.getElementById('btn-today');
 const btnTomorrow = document.getElementById('btn-tomorrow');
+const btnYtd = document.getElementById('btn-ytd');
 
-btnToday.addEventListener('click', () => {
-  btnToday.classList.add('active');
-  btnTomorrow.classList.remove('active');
-  loadData(today);
-});
-btnTomorrow.addEventListener('click', () => {
-  btnTomorrow.classList.add('active');
-  btnToday.classList.remove('active');
-  loadData(tomorrow);
-});
+function setActive(btn) {
+  [btnToday, btnTomorrow, btnYtd].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
 
-// Default: try tomorrow first, fall back to today
+btnToday.addEventListener('click', () => { setActive(btnToday); loadData(today); });
+btnTomorrow.addEventListener('click', () => { setActive(btnTomorrow); loadData(tomorrow); });
+btnYtd.addEventListener('click', () => { setActive(btnYtd); loadYTD(); });
+
 btnTomorrow.classList.add('active');
 loadData(tomorrow);
 </script>

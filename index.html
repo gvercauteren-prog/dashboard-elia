@@ -398,7 +398,7 @@ async function loadData(dateObj) {
         <div class="metrics fade-in">
           <div class="metric"><span class="metric-icon" style="color:var(--engie-red)">&#9660;</span><span class="metric-value ${mn<0?'danger':''}">${mn.toFixed(2)}</span><div class="metric-label">Min price (EUR)</div></div>
           <div class="metric"><span class="metric-icon" style="color:var(--engie-green-fun)">&#9650;</span><span class="metric-value">${mx.toFixed(2)}</span><div class="metric-label">Max price (EUR)</div></div>
-          <div class="metric"><span class="metric-value">${av.toFixed(2)}</span><div class="metric-label">Avg price (EUR)</div></div>
+          <div class="metric"><span class="metric-icon" style="visibility:hidden">&#9650;</span><span class="metric-value">${av.toFixed(2)}</span><div class="metric-label">Avg price (EUR)</div></div>
           <div class="metric"><span class="metric-icon" style="color:var(--engie-orange);font-weight:900">&#9888;</span><span class="metric-value ${negCount>0?'danger':''}">${negCount}</span><div class="metric-label">Negative slots</div></div>
           <div class="metric"><span class="metric-icon">&#8634;</span><span class="metric-value ${hrRuns.length>0?'danger':''}">${hrRuns.length}</span><div class="metric-label">≥1h neg. runs</div></div>
           <div class="metric"><span class="metric-icon" style="color:var(--engie-yellow)">&#9728;</span><span class="metric-value ${deepNegHours.length>0?'danger':''}">${deepNegHours.length}</span><div class="metric-label">Hours avg ≤ -10</div></div>

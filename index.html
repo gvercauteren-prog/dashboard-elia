@@ -34,6 +34,7 @@ h2{font-size:20px;font-weight:500;margin-bottom:4px}
 .card-title{font-size:13px;font-weight:500;margin-bottom:12px}
 .legend{display:flex;gap:14px;margin-bottom:12px;font-size:12px;color:#6e6e73;align-items:center;flex-wrap:wrap}
 .legend-dot{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:4px}
+.legend-stripe{width:10px;height:10px;display:inline-block;margin-right:4px;background:repeating-linear-gradient(45deg,#f0eef5,#f0eef5 2px,#e0dce8 2px,#e0dce8 4px);border-radius:2px}
 .chart-wrap{position:relative;width:100%;height:260px}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;padding:8px;font-weight:500;color:#6e6e73;border-bottom:.5px solid #e0e0e5}
@@ -52,6 +53,20 @@ tr.neg-row{background:#fff0f0}
 .ytd-day-row:hover{background:#f5f5f7}
 .ytd-detail{display:none;background:#fafafa}
 .ytd-detail td{padding-left:28px;color:#6e6e73;font-size:12px}
+.wk-compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.wk-compare-col{background:#fff;border-radius:12px;border:.5px solid #e0e0e5;padding:16px}
+.wk-compare-col h4{font-size:14px;font-weight:500;margin-bottom:12px}
+.wk-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:.5px solid #f0f0f5;font-size:13px}
+.wk-row:last-child{border-bottom:none}
+.wk-label{color:#6e6e73}
+.wk-val{font-weight:500}
+.wk-val.danger{color:#a32d2d}
+.wk-bar-wrap{display:flex;align-items:center;gap:8px;margin-top:8px}
+.wk-bar{height:8px;border-radius:4px;min-width:2px}
+.wk-bar.weekend{background:#8B5CF6}
+.wk-bar.weekday{background:#E24B4A}
+.wk-bar-label{font-size:11px;color:#6e6e73;white-space:nowrap}
+@media(max-width:600px){.wk-compare{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -73,6 +88,26 @@ tr.neg-row{background:#fff0f0}
 let chart = null;
 let ytdChart = null;
 
+/* ── Weekend background plugin for Chart.js ── */
+const weekendBgPlugin = {
+  id: 'weekendBg',
+  beforeDraw(chart) {
+    const meta = chart.config._weekendFlags;
+    if (!meta) return;
+    const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
+    ctx.save();
+    ctx.fillStyle = 'rgba(139, 92, 246, 0.08)';
+    for (let i = 0; i < meta.length; i++) {
+      if (!meta[i]) continue;
+      const xCenter = x.getPixelForValue(i);
+      const barWidth = x.width / meta.length;
+      ctx.fillRect(xCenter - barWidth / 2, top, barWidth, bottom - top);
+    }
+    ctx.restore();
+  }
+};
+Chart.register(weekendBgPlugin);
+
 function beOffset(d) {
   const year = d.getFullYear();
   let s = new Date(year, 2, 31);
@@ -85,6 +120,10 @@ function beOffset(d) {
 
 function pad(n) { return String(n).padStart(2, '0'); }
 function fmtDate(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function isWeekend(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.getDay() === 0 || d.getDay() === 6;
+}
 
 function badge(p) {
   if (p < 0) return '<span class="badge badge-neg">Negative</span>';
@@ -396,6 +435,84 @@ function renderYTD(allHours, prevYearHours) {
     }
   }
 
+  /* ── Weekend vs weekday analysis ── */
+  const wkendCur = allHours.filter(h => isWeekend(h.date));
+  const wkdayCur = allHours.filter(h => !isWeekend(h.date));
+  const wkendPrev = prevYearHours ? prevYearHours.filter(h => isWeekend(h.date)) : [];
+  const wkdayPrev = prevYearHours ? prevYearHours.filter(h => !isWeekend(h.date)) : [];
+
+  // Count scanned days to compute rates
+  const today = new Date();
+  function countDayTypes(yr, endDate) {
+    let wkend = 0, wkday = 0;
+    const d = new Date(yr, 0, 1);
+    const end = new Date(endDate);
+    while (d <= end) {
+      const dow = d.getDay();
+      if (dow === 0 || dow === 6) wkend++; else wkday++;
+      d.setDate(d.getDate() + 1);
+    }
+    return { wkend, wkday };
+  }
+  const curCounts = countDayTypes(year, today);
+  const prevEndDate = new Date(prevYear, today.getMonth(), today.getDate());
+  const prevCounts = countDayTypes(prevYear, prevEndDate);
+
+  const curWkendRate = curCounts.wkend > 0 ? (wkendCur.length / curCounts.wkend).toFixed(2) : '0';
+  const curWkdayRate = curCounts.wkday > 0 ? (wkdayCur.length / curCounts.wkday).toFixed(2) : '0';
+  const prevWkendRate = prevCounts.wkend > 0 ? (wkendPrev.length / prevCounts.wkend).toFixed(2) : '0';
+  const prevWkdayRate = prevCounts.wkday > 0 ? (wkdayPrev.length / prevCounts.wkday).toFixed(2) : '0';
+
+  // Unique days with negative hours
+  const curWkendDays = new Set(wkendCur.map(h => h.date)).size;
+  const curWkdayDays = new Set(wkdayCur.map(h => h.date)).size;
+  const prevWkendDays = new Set(wkendPrev.map(h => h.date)).size;
+  const prevWkdayDays = new Set(wkdayPrev.map(h => h.date)).size;
+
+  function pctBar(weekend, weekday) {
+    const total = weekend + weekday;
+    if (total === 0) return '<div style="font-size:12px;color:#6e6e73">No negative hours</div>';
+    const wePct = Math.round(weekend / total * 100);
+    const wdPct = 100 - wePct;
+    return `<div class="wk-bar-wrap">
+      <span class="wk-bar-label">${wePct}% wknd</span>
+      <div style="flex:1;display:flex;height:8px;border-radius:4px;overflow:hidden">
+        <div style="width:${wePct}%;background:#8B5CF6"></div>
+        <div style="width:${wdPct}%;background:#E24B4A"></div>
+      </div>
+      <span class="wk-bar-label">${wdPct}% wkday</span>
+    </div>`;
+  }
+
+  const weekendTileHtml = `
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">Weekend vs Weekday — negative hours (avg &le; -10 EUR/MWh)</div>
+      <div class="wk-compare">
+        <div class="wk-compare-col">
+          <h4>${year}</h4>
+          <div class="wk-row"><span class="wk-label">Weekend hours</span><span class="wk-val danger">${wkendCur.length}</span></div>
+          <div class="wk-row"><span class="wk-label">Weekday hours</span><span class="wk-val danger">${wkdayCur.length}</span></div>
+          <div class="wk-row"><span class="wk-label">Weekend days affected</span><span class="wk-val">${curWkendDays} / ${curCounts.wkend}</span></div>
+          <div class="wk-row"><span class="wk-label">Weekday days affected</span><span class="wk-val">${curWkdayDays} / ${curCounts.wkday}</span></div>
+          <div class="wk-row"><span class="wk-label">Neg. hours / weekend day</span><span class="wk-val">${curWkendRate}</span></div>
+          <div class="wk-row"><span class="wk-label">Neg. hours / weekday</span><span class="wk-val">${curWkdayRate}</span></div>
+          ${pctBar(wkendCur.length, wkdayCur.length)}
+        </div>
+        <div class="wk-compare-col">
+          <h4>${prevYear} <span style="font-weight:400;font-size:12px;color:#6e6e73">(same period)</span></h4>
+          <div class="wk-row"><span class="wk-label">Weekend hours</span><span class="wk-val danger">${wkendPrev.length}</span></div>
+          <div class="wk-row"><span class="wk-label">Weekday hours</span><span class="wk-val danger">${wkdayPrev.length}</span></div>
+          <div class="wk-row"><span class="wk-label">Weekend days affected</span><span class="wk-val">${prevWkendDays} / ${prevCounts.wkend}</span></div>
+          <div class="wk-row"><span class="wk-label">Weekday days affected</span><span class="wk-val">${prevWkdayDays} / ${prevCounts.wkday}</span></div>
+          <div class="wk-row"><span class="wk-label">Neg. hours / weekend day</span><span class="wk-val">${prevWkendRate}</span></div>
+          <div class="wk-row"><span class="wk-label">Neg. hours / weekday</span><span class="wk-val">${prevWkdayRate}</span></div>
+          ${pctBar(wkendPrev.length, wkdayPrev.length)}
+        </div>
+      </div>
+    </div>
+  `;
+
+  /* ── Monthly aggregation ── */
   const byMonth = {};
   for (const h of allHours) {
     const m = h.date.slice(5, 7);
@@ -440,9 +557,12 @@ function renderYTD(allHours, prevYearHours) {
     const entries = byDate[dt];
     const dayDeepest = Math.min(...entries.map(e => e.avg));
     const dayName = new Date(dt + 'T12:00:00').toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' });
-    tableRows += `<tr class="ytd-day-row" data-date="${dt}">
+    const isWe = isWeekend(dt);
+    const weTag = isWe ? ' <span style="font-size:11px;color:#8B5CF6;font-weight:500">WE</span>' : '';
+    const rowStyle = isWe ? ' style="background:rgba(139,92,246,0.04)"' : '';
+    tableRows += `<tr class="ytd-day-row" data-date="${dt}"${rowStyle}>
       <td>${dt}</td>
-      <td>${dayName}</td>
+      <td>${dayName}${weTag}</td>
       <td style="font-weight:500">${entries.length}</td>
       <td class="danger" style="font-weight:500">${dayDeepest.toFixed(2)}</td>
       <td>${entries.map(e => e.label).join(', ')}</td>
@@ -461,6 +581,7 @@ function renderYTD(allHours, prevYearHours) {
   document.getElementById('content').innerHTML = `
     <p class="subtitle">Year-to-date ${year} | Full hours with average &le; -10 EUR/MWh</p>
     ${metricsHtml}
+    ${weekendTileHtml}
     <div class="card">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
         <button id="ytd-back-btn" style="display:none;background:#fff;border:.5px solid #e0e0e5;border-radius:6px;padding:4px 10px;font-size:13px;cursor:pointer;font-family:inherit" onclick="renderMonthlyChart()">&#8592; All months</button>
@@ -524,7 +645,7 @@ window.renderMonthlyChart = function() {
     <span><span class="legend-dot" style="background:#85B7EB"></span>${prevYear} (same period)</span>
   `;
 
-  ytdChart = new Chart(document.getElementById('ytd-chart'), {
+  const cfg = {
     type: 'bar',
     data: {
       labels: monthLabels,
@@ -550,7 +671,9 @@ window.renderMonthlyChart = function() {
         y: { beginAtZero: true, ticks: { stepSize: 1, callback: v => Number.isInteger(v) ? v : '' }, title: { display: true, text: 'Full hours' } }
       }
     }
-  });
+  };
+  cfg._weekendFlags = null; // no weekend shading on monthly view
+  ytdChart = new Chart(document.getElementById('ytd-chart'), cfg);
 };
 
 function drillDownMonth(monthKey, monthName) {
@@ -568,6 +691,8 @@ function drillDownMonth(monthKey, monthName) {
   const prevDayValues = [];
   const dayDeepest = [];
   const prevDayDeepest = [];
+  const weekendFlags = [];
+
   for (let d = 1; d <= daysInMonth; d++) {
     const key = `${year}-${monthKey}-${pad(d)}`;
     const prevKey = `${prevYear}-${monthKey}-${pad(d)}`;
@@ -578,6 +703,11 @@ function drillDownMonth(monthKey, monthName) {
     prevDayValues.push(prevEntries.length);
     dayDeepest.push(entries.length > 0 ? Math.min(...entries.map(e => e.avg)).toFixed(1) : null);
     prevDayDeepest.push(prevEntries.length > 0 ? Math.min(...prevEntries.map(e => e.avg)).toFixed(1) : null);
+
+    // Weekend detection (use current year for day-of-week)
+    const dateObj = new Date(year, m, d);
+    const dow = dateObj.getDay();
+    weekendFlags.push(dow === 0 || dow === 6);
   }
 
   document.getElementById('ytd-back-btn').style.display = '';
@@ -585,9 +715,10 @@ function drillDownMonth(monthKey, monthName) {
   document.getElementById('ytd-chart-legend').innerHTML = `
     <span><span class="legend-dot" style="background:#E24B4A"></span>${year}</span>
     <span><span class="legend-dot" style="background:#85B7EB"></span>${prevYear}</span>
+    <span><span class="legend-stripe"></span>Weekend</span>
   `;
 
-  ytdChart = new Chart(document.getElementById('ytd-chart'), {
+  const cfg = {
     type: 'bar',
     data: {
       labels: dayLabels,
@@ -602,7 +733,11 @@ function drillDownMonth(monthKey, monthName) {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            title: ctx => `${monthName} ${ctx[0].label}`,
+            title: ctx => {
+              const idx = ctx[0].dataIndex;
+              const we = weekendFlags[idx] ? ' (weekend)' : '';
+              return `${monthName} ${ctx[0].label}${we}`;
+            },
             label: ctx => {
               const v = ctx.parsed.y;
               const isCurrentYear = ctx.datasetIndex === 0;
@@ -615,11 +750,17 @@ function drillDownMonth(monthKey, monthName) {
         }
       },
       scales: {
-        x: { grid: { display: false }, ticks: { autoSkip: false, callback: (v, i) => (dayLabels[i] % 5 === 1 || dayLabels[i] === 1) ? dayLabels[i] : '' }, title: { display: true, text: 'Day of month' } },
+        x: { grid: { display: false }, ticks: { autoSkip: false, callback: (v, i) => {
+          const lbl = dayLabels[i];
+          const suffix = weekendFlags[i] ? '*' : '';
+          return (lbl % 5 === 1 || lbl === 1) ? lbl + suffix : (weekendFlags[i] ? lbl + '*' : '');
+        }, font: (ctx) => ({ size: 10, weight: weekendFlags[ctx.index] ? 'bold' : 'normal' }) }, title: { display: true, text: 'Day of month (* = weekend)' } },
         y: { beginAtZero: true, ticks: { stepSize: 1, callback: v => Number.isInteger(v) ? v : '' }, title: { display: true, text: 'Full hours' } }
       }
     }
-  });
+  };
+  cfg._weekendFlags = weekendFlags;
+  ytdChart = new Chart(document.getElementById('ytd-chart'), cfg);
 }
 
 /* ── Navigation ── */

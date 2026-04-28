@@ -125,6 +125,7 @@ body{font-family:'Lato',Arial,sans-serif;background:#fff;color:var(--grey-900);f
 .metric-icon{font-size:28px;margin-bottom:8px;display:block}
 .metric-value{font-size:28px;font-weight:900;color:var(--grey-900);display:block;line-height:1.2}
 .metric-value.danger{color:var(--engie-red)}
+.metric-value.positive{color:var(--engie-green-fun)}
 .metric-label{font-size:11px;color:var(--grey-600);margin-top:6px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
 
 /* ── Cards ── */
@@ -557,7 +558,7 @@ function renderYTD(allHours, prevYearHours) {
   const prevByMonth = {}; if (prevYearHours) { for (const h of prevYearHours) { const m = h.date.slice(5, 7); if (!prevByMonth[m]) prevByMonth[m] = 0; prevByMonth[m]++; } }
   const diff = totalHours - prevTotalHours;
   const diffLabel = diff > 0 ? `+${diff} vs ${prevYear}` : diff < 0 ? `${diff} vs ${prevYear}` : `same as ${prevYear}`;
-  const diffColor = diff > 0 ? 'danger' : '';
+  const diffColor = diff > 0 ? 'positive' : diff < 0 ? 'danger' : '';
   const monthLabels = [], monthValues = [], prevMonthValues = [];
   for (let m = 0; m < 12; m++) { const mm = pad(m + 1); monthLabels.push(new Date(year, m, 1).toLocaleString('en', { month: 'short' })); monthValues.push(byMonth[mm] || 0); prevMonthValues.push(prevByMonth[mm] || 0); }
 

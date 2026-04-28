@@ -9,18 +9,18 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{
-  --engie-blue:#0079cc;
-  --engie-blue-hover:#005a97;
-  --engie-blue-dark:#003f6a;
-  --engie-teal:#23d2b5;
-  --engie-gradient:linear-gradient(132deg,#0079cc -30%,#23d2b5 133%);
-  --engie-gradient-text:linear-gradient(132deg,#0079cc 0%,#23d2b5 100%);
-  --engie-purple:#1f106d;
-  --engie-red:#e74a50;
-  --engie-orange:#d04800;
-  --engie-yellow:#fbdb3c;
-  --engie-green:#6ed2b1;
-  --engie-green-fun:#4b9726;
+  ---blue:#0079cc;
+  ---blue-hover:#005a97;
+  ---blue-dark:#003f6a;
+  ---teal:#23d2b5;
+  ---gradient:linear-gradient(132deg,#0079cc -30%,#23d2b5 133%);
+  ---gradient-text:linear-gradient(132deg,#0079cc 0%,#23d2b5 100%);
+  ---purple:#1f106d;
+  ---red:#e74a50;
+  ---orange:#d04800;
+  ---yellow:#fbdb3c;
+  ---green:#6ed2b1;
+  ---green-fun:#4b9726;
   --grey-900:#212121;
   --grey-800:#424242;
   --grey-700:#616161;
@@ -42,9 +42,9 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Lato',Arial,sans-serif;background:#fff;color:var(--grey-900);font-weight:400;font-size:14px;line-height:1.6}
 
-/* ── ENGIE gradient text (like Happy Hours headings) ── */
+/* ──  gradient text (like Happy Hours headings) ── */
 .text-gradient{
-  background:var(--engie-gradient-text);
+  background:var(---gradient-text);
   -webkit-background-clip:text;
   -webkit-text-fill-color:transparent;
   background-clip:text;
@@ -76,7 +76,7 @@ body{font-family:'Lato',Arial,sans-serif;background:#fff;color:var(--grey-900);f
 /* ── Container ── */
 .container{max-width:1040px;margin:0 auto;padding:0 24px}
 
-/* ── Alternating sections (ENGIE pattern) ── */
+/* ── Alternating sections ( pattern) ── */
 .section{padding:28px 0}
 .section--grey{background:var(--grey-100)}
 .section--white{background:#fff}
@@ -88,9 +88,9 @@ body{font-family:'Lato',Arial,sans-serif;background:#fff;color:var(--grey-900);f
   padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;
   color:var(--grey-700);transition:all .2s
 }
-.date-nav button:hover{border-color:var(--engie-blue);color:var(--engie-blue);background:#f0f9ff}
+.date-nav button:hover{border-color:var(---blue);color:var(---blue);background:#f0f9ff}
 .date-nav button.active{
-  background:var(--engie-blue);color:#fff;border-color:var(--engie-blue);
+  background:var(---blue);color:#fff;border-color:var(---blue);
   box-shadow:0 2px 8px rgba(0,121,204,.25)
 }
 .date-nav span{font-size:14px;font-weight:700;color:var(--grey-600)}
@@ -124,8 +124,8 @@ body{font-family:'Lato',Arial,sans-serif;background:#fff;color:var(--grey-900);f
 .metric:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.06)}
 .metric-icon{font-size:28px;margin-bottom:8px;display:block}
 .metric-value{font-size:28px;font-weight:900;color:var(--grey-900);display:block;line-height:1.2}
-.metric-value.danger{color:var(--engie-red)}
-.metric-value.positive{color:var(--engie-green-fun)}
+.metric-value.danger{color:var(---red)}
+.metric-value.positive{color:var(---green-fun)}
 .metric-label{font-size:11px;color:var(--grey-600);margin-top:6px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
 
 /* ── Cards ── */
@@ -154,7 +154,7 @@ tr.neg-row{background:var(--danger-bg)}
 /* ── Footer ── */
 .footer-section{background:var(--grey-900);color:var(--grey-400);padding:20px 0}
 .footer-inner{display:flex;flex-wrap:wrap;gap:16px;font-size:12px;align-items:center}
-.footer-inner a{color:var(--engie-teal);text-decoration:none}
+.footer-inner a{color:var(---teal);text-decoration:none}
 
 /* ── Loading / Error ── */
 .loading{text-align:center;padding:60px 20px;color:var(--grey-600);font-size:15px;font-weight:300}
@@ -162,7 +162,7 @@ tr.neg-row{background:var(--danger-bg)}
 
 /* ── Progress bar ── */
 .progress-bar-outer{width:100%;height:6px;background:var(--grey-300);border-radius:3px;margin:14px 0}
-.progress-bar-inner{height:100%;background:var(--engie-gradient);border-radius:3px;transition:width .2s}
+.progress-bar-inner{height:100%;background:var(---gradient);border-radius:3px;transition:width .2s}
 
 /* ── YTD table rows ── */
 .ytd-day-row{cursor:pointer;transition:background .1s}
@@ -180,13 +180,13 @@ tr.neg-row{background:var(--danger-bg)}
 .wk-row:last-child{border-bottom:none}
 .wk-label{color:var(--grey-600)}
 .wk-val{font-weight:700}
-.wk-val.danger{color:var(--engie-red)}
+.wk-val.danger{color:var(---red)}
 .wk-bar-wrap{display:flex;align-items:center;gap:8px;margin-top:12px}
 .wk-bar-label{font-size:11px;color:var(--grey-600);white-space:nowrap;font-weight:700}
 
 /* ── Back button (orange CTA style like Happy Hours) ── */
 .btn-back{
-  display:none;background:var(--engie-orange);color:#fff;
+  display:none;background:var(---orange);color:#fff;
   border:none;border-radius:24px;padding:7px 18px;
   font-size:13px;cursor:pointer;font-family:inherit;font-weight:700;
   transition:background .15s
@@ -209,11 +209,11 @@ tr.neg-row{background:var(--danger-bg)}
 </head>
 <body>
 
-<!-- ─── Hero (ENGIE header-product style) ─── -->
+<!-- ─── Hero ( header-product style) ─── -->
 <div class="hero">
   <div class="container">
     <div class="hero-brand">
-      <div class="hero-logo">ENGIE <span>energy</span></div>
+      <div class="hero-logo"></div>
     </div>
     <h1>Day-Ahead Price Monitor</h1>
     <p>Belgian electricity market clearing prices &mdash; BZN|BE via Elia / EPEX SPOT</p>
@@ -249,7 +249,7 @@ tr.neg-row{background:var(--danger-bg)}
 let chart = null;
 let ytdChart = null;
 
-/* ── ENGIE color palette ── */
+/* ──  color palette ── */
 const C = {
   green: '#6ed2b1',
   yellow: '#fbdb3c',
@@ -397,12 +397,12 @@ async function loadData(dateObj) {
         ${deepBanner}
         ${alertHtml}
         <div class="metrics fade-in">
-          <div class="metric"><span class="metric-icon" style="color:var(--engie-red)">&#9660;</span><span class="metric-value ${mn<0?'danger':''}">${mn.toFixed(2)}</span><div class="metric-label">Min price (EUR)</div></div>
-          <div class="metric"><span class="metric-icon" style="color:var(--engie-green-fun)">&#9650;</span><span class="metric-value">${mx.toFixed(2)}</span><div class="metric-label">Max price (EUR)</div></div>
+          <div class="metric"><span class="metric-icon" style="color:var(---red)">&#9660;</span><span class="metric-value ${mn<0?'danger':''}">${mn.toFixed(2)}</span><div class="metric-label">Min price (EUR)</div></div>
+          <div class="metric"><span class="metric-icon" style="color:var(---green-fun)">&#9650;</span><span class="metric-value">${mx.toFixed(2)}</span><div class="metric-label">Max price (EUR)</div></div>
           <div class="metric"><span class="metric-icon" style="visibility:hidden">&#9650;</span><span class="metric-value">${av.toFixed(2)}</span><div class="metric-label">Avg price (EUR)</div></div>
-          <div class="metric"><span class="metric-icon" style="color:var(--engie-orange);font-weight:900">&#9888;</span><span class="metric-value ${negCount>0?'danger':''}">${negCount}</span><div class="metric-label">Negative slots</div></div>
+          <div class="metric"><span class="metric-icon" style="color:var(---orange);font-weight:900">&#9888;</span><span class="metric-value ${negCount>0?'danger':''}">${negCount}</span><div class="metric-label">Negative slots</div></div>
           <div class="metric"><span class="metric-icon">&#8634;</span><span class="metric-value ${hrRuns.length>0?'danger':''}">${hrRuns.length}</span><div class="metric-label">≥1h neg. runs</div></div>
-          <div class="metric"><span class="metric-icon" style="color:var(--engie-yellow)">&#9728;</span><span class="metric-value ${deepNegHours.length>0?'danger':''}">${deepNegHours.length}</span><div class="metric-label">Hours avg ≤ -10</div></div>
+          <div class="metric"><span class="metric-icon" style="color:var(---yellow)">&#9728;</span><span class="metric-value ${deepNegHours.length>0?'danger':''}">${deepNegHours.length}</span><div class="metric-label">Hours avg ≤ -10</div></div>
         </div>
         ${hrBanner}
       </div>
@@ -569,7 +569,7 @@ function renderYTD(allHours, prevYearHours) {
     const isWe = isWeekend(dt);
     const weTag = isWe ? ` <span style="font-size:11px;color:${C.purple};font-weight:700">WE</span>` : '';
     const rowStyle = isWe ? ` style="background:rgba(31,16,109,0.03)"` : '';
-    tableRows += `<tr class="ytd-day-row" data-date="${dt}"${rowStyle}><td>${dt}</td><td>${dayName}${weTag}</td><td style="font-weight:700">${entries.length}</td><td style="font-weight:700;color:var(--engie-red)">${dayDeepest.toFixed(2)}</td><td>${entries.map(e => e.label).join(', ')}</td></tr>`;
+    tableRows += `<tr class="ytd-day-row" data-date="${dt}"${rowStyle}><td>${dt}</td><td>${dayName}${weTag}</td><td style="font-weight:700">${entries.length}</td><td style="font-weight:700;color:var(---red)">${dayDeepest.toFixed(2)}</td><td>${entries.map(e => e.label).join(', ')}</td></tr>`;
     for (const e of entries) { tableRows += `<tr class="ytd-detail" data-parent="${dt}"><td></td><td></td><td>${e.label}</td><td>${e.avg.toFixed(2)} EUR/MWh</td><td>Slots: ${e.prices.map(p => p.toFixed(2)).join(', ')}</td></tr>`; }
   }
 
@@ -579,9 +579,9 @@ function renderYTD(allHours, prevYearHours) {
         <div class="section-title"><span class="text-gradient">Year-to-date ${year}</span></div>
         <p class="subtitle">Full hours with average ≤ -10 EUR/MWh</p>
         <div class="metrics fade-in">
-          <div class="metric"><span class="metric-icon" style="color:var(--engie-orange);font-weight:900">&#9888;</span><span class="metric-value danger">${totalHours}</span><div class="metric-label">Hours ≤ -10 (${year})</div></div>
+          <div class="metric"><span class="metric-icon" style="color:var(---orange);font-weight:900">&#9888;</span><span class="metric-value danger">${totalHours}</span><div class="metric-label">Hours ≤ -10 (${year})</div></div>
           <div class="metric"><span class="metric-icon">&#8634;</span><span class="metric-value">${prevTotalHours}</span><div class="metric-label">Same period ${prevYear}</div></div>
-          <div class="metric"><span class="metric-icon" style="color:var(--engie-red)">&#9660;</span><span class="metric-value danger">${deepest.toFixed(0)} EUR</span><div class="metric-label">Deepest hour avg</div></div>
+          <div class="metric"><span class="metric-icon" style="color:var(---red)">&#9660;</span><span class="metric-value danger">${deepest.toFixed(0)} EUR</span><div class="metric-label">Deepest hour avg</div></div>
           <div class="metric"><span class="metric-icon">&#8593;&#8595;</span><span class="metric-value ${diffColor}">${diffLabel}</span><div class="metric-label">YoY change</div></div>
         </div>
       </div>

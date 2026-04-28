@@ -3,75 +3,143 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Belgian Electricity - Day-Ahead Monitor</title>
+<title>Day-Ahead Price Monitor | Belgian Electricity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
+:root{
+  --engie-blue:#0079cc;
+  --engie-blue-hover:#005a97;
+  --engie-blue-active:#003f6a;
+  --engie-teal:#23d2b5;
+  --engie-gradient:linear-gradient(132deg,#0079cc -30%,#23d2b5 133%);
+  --engie-purple:#1f106d;
+  --engie-red:#e74a50;
+  --engie-orange:#d04800;
+  --engie-yellow:#fbdb3c;
+  --engie-green:#6ed2b1;
+  --engie-green-fun:#4b9726;
+  --engie-accent-green:#009934;
+  --grey-900:#212121;
+  --grey-800:#424242;
+  --grey-700:#616161;
+  --grey-600:#757575;
+  --grey-500:#9e9e9e;
+  --grey-400:#bdbdbd;
+  --grey-300:#e0e0e0;
+  --grey-200:#eee;
+  --grey-100:#f5f5f5;
+  --danger-text:#a94442;
+  --danger-bg:#f2dede;
+  --success-text:#3c763d;
+  --success-bg:#dff0d8;
+  --warning-text:#8a6d3b;
+  --warning-bg:#fcf8e3;
+  --radius:8px;
+  --radius-sm:4px;
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f7;color:#1d1d1f;padding:24px 16px}
-.container{max-width:960px;margin:0 auto}
-h2{font-size:20px;font-weight:500;margin-bottom:4px}
-.subtitle{font-size:13px;color:#6e6e73;margin-bottom:24px}
-.date-nav{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
-.date-nav button{background:#fff;border:.5px solid #e0e0e5;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;font-family:inherit}
-.date-nav button:hover{background:#f0f0f5}
-.date-nav button.active{background:#1d1d1f;color:#fff;border-color:#1d1d1f}
-.date-nav span{font-size:14px;font-weight:500}
-.alert-banner{padding:14px 18px;border-radius:12px;margin-bottom:20px}
-.alert-neg{background:#fff0f0;border:.5px solid #f09595}
-.alert-ok{background:#f0fff4;border:.5px solid #7dd3a8}
-.alert-title{font-size:15px;font-weight:500;margin-bottom:6px}
-.alert-title.neg{color:#a32d2d}
-.alert-title.ok{color:#1a6640}
+body{font-family:'Lato',Arial,sans-serif;background:var(--grey-100);color:var(--grey-900);font-weight:400;font-size:14px;line-height:1.5}
+/* ── Header bar ── */
+.header-bar{background:var(--engie-gradient);padding:20px 24px 18px;color:#fff}
+.header-bar .container{max-width:1040px;margin:0 auto;display:flex;align-items:center;gap:16px}
+.header-bar .logo{font-size:24px;font-weight:900;letter-spacing:.5px;text-transform:uppercase}
+.header-bar .logo span{font-weight:300;opacity:.85}
+.header-bar h1{font-size:18px;font-weight:700;margin:0;flex:1}
+/* ── Container ── */
+.container{max-width:1040px;margin:0 auto;padding:0 24px}
+.main{padding:24px 0 40px}
+/* ── Navigation ── */
+.date-nav{display:flex;align-items:center;gap:10px;margin-bottom:24px;flex-wrap:wrap}
+.date-nav button{
+  background:#fff;border:1px solid var(--grey-300);border-radius:var(--radius);
+  padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;
+  color:var(--grey-800);transition:all .15s
+}
+.date-nav button:hover{border-color:var(--engie-blue);color:var(--engie-blue)}
+.date-nav button.active{
+  background:var(--engie-blue);color:#fff;border-color:var(--engie-blue)
+}
+.date-nav span{font-size:14px;font-weight:700;color:var(--grey-700)}
+/* ── Subtitle ── */
+.subtitle{font-size:13px;color:var(--grey-600);margin-bottom:24px;font-weight:400}
+/* ── Alert banners ── */
+.alert-banner{padding:14px 18px;border-radius:var(--radius);margin-bottom:20px;border:1px solid}
+.alert-neg{background:var(--danger-bg);border-color:#ebccd1}
+.alert-ok{background:var(--success-bg);border-color:#d6e9c6}
+.alert-title{font-size:15px;font-weight:700;margin-bottom:6px}
+.alert-title.neg{color:var(--danger-text)}
+.alert-title.ok{color:var(--success-text)}
 .neg-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
-.chip{background:#fcebeb;border:.5px solid #f09595;border-radius:6px;padding:3px 10px;font-size:13px;color:#a32d2d;font-weight:500}
-.implications{font-size:13px;color:#6e6e73;margin-top:8px}
-.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
-.metric{background:#fff;border-radius:12px;padding:16px;border:.5px solid #e0e0e5}
-.metric-label{font-size:12px;color:#6e6e73;margin-bottom:4px}
-.metric-value{font-size:22px;font-weight:500}
-.metric-value.danger{color:#a32d2d}
-.card{background:#fff;border-radius:12px;border:.5px solid #e0e0e5;padding:16px 18px;margin-bottom:20px}
-.card-title{font-size:13px;font-weight:500;margin-bottom:12px}
-.legend{display:flex;gap:14px;margin-bottom:12px;font-size:12px;color:#6e6e73;align-items:center;flex-wrap:wrap}
-.legend-dot{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:4px}
-.legend-stripe{width:10px;height:10px;display:inline-block;margin-right:4px;background:repeating-linear-gradient(45deg,#f0eef5,#f0eef5 2px,#e0dce8 2px,#e0dce8 4px);border-radius:2px}
-.chart-wrap{position:relative;width:100%;height:260px}
+.chip{background:#fff;border:1px solid #ebccd1;border-radius:var(--radius-sm);padding:3px 10px;font-size:13px;color:var(--danger-text);font-weight:700}
+.implications{font-size:13px;color:var(--grey-600);margin-top:8px}
+/* ── Metric tiles ── */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+.metric{background:#fff;border-radius:var(--radius);padding:18px 16px;border:1px solid var(--grey-300)}
+.metric-label{font-size:12px;color:var(--grey-600);margin-bottom:6px;font-weight:400;text-transform:uppercase;letter-spacing:.3px}
+.metric-value{font-size:24px;font-weight:900;color:var(--grey-900)}
+.metric-value.danger{color:var(--engie-red)}
+/* ── Cards ── */
+.card{background:#fff;border-radius:var(--radius);border:1px solid var(--grey-300);padding:18px 20px;margin-bottom:20px}
+.card-title{font-size:14px;font-weight:700;margin-bottom:14px;color:var(--grey-900)}
+/* ── Legend ── */
+.legend{display:flex;gap:16px;margin-bottom:14px;font-size:12px;color:var(--grey-600);align-items:center;flex-wrap:wrap;font-weight:400}
+.legend-dot{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:middle}
+.legend-stripe{width:10px;height:10px;display:inline-block;margin-right:5px;background:repeating-linear-gradient(45deg,rgba(31,16,109,.12),rgba(31,16,109,.12) 2px,rgba(31,16,109,.04) 2px,rgba(31,16,109,.04) 4px);border-radius:2px;vertical-align:middle}
+/* ── Charts ── */
+.chart-wrap{position:relative;width:100%;height:280px}
+/* ── Tables ── */
 table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;padding:8px;font-weight:500;color:#6e6e73;border-bottom:.5px solid #e0e0e5}
-td{padding:7px 8px;border-bottom:.5px solid #f0f0f5}
-tr.neg-row{background:#fff0f0}
-.badge{font-size:11px;padding:2px 8px;border-radius:4px;border:.5px solid}
-.badge-neg{background:#fff0f0;color:#a32d2d;border-color:#f09595}
-.badge-low{background:#fffbe0;color:#7a5c00;border-color:#f0d070}
-.badge-ok{background:#f0fff4;color:#1a6640;border-color:#7dd3a8}
-.footer{font-size:12px;color:#6e6e73;border-top:.5px solid #e0e0e5;padding-top:14px;display:flex;flex-wrap:wrap;gap:16px}
-.loading{text-align:center;padding:60px 20px;color:#6e6e73;font-size:15px}
-.error{text-align:center;padding:60px 20px;color:#a32d2d;font-size:15px}
-.progress-bar-outer{width:100%;height:6px;background:#e0e0e5;border-radius:3px;margin:12px 0}
-.progress-bar-inner{height:100%;background:#1d1d1f;border-radius:3px;transition:width .2s}
-.ytd-day-row{cursor:pointer}
-.ytd-day-row:hover{background:#f5f5f7}
+th{text-align:left;padding:10px 8px;font-weight:700;color:var(--grey-600);border-bottom:2px solid var(--grey-300);text-transform:uppercase;font-size:11px;letter-spacing:.4px}
+td{padding:8px;border-bottom:1px solid var(--grey-200)}
+tr.neg-row{background:var(--danger-bg)}
+.badge{font-size:11px;padding:2px 8px;border-radius:var(--radius-sm);border:1px solid;font-weight:700}
+.badge-neg{background:var(--danger-bg);color:var(--danger-text);border-color:#ebccd1}
+.badge-low{background:var(--warning-bg);color:var(--warning-text);border-color:#faebcc}
+.badge-ok{background:var(--success-bg);color:var(--success-text);border-color:#d6e9c6}
+/* ── Footer ── */
+.footer{font-size:12px;color:var(--grey-500);border-top:1px solid var(--grey-300);padding:16px 0;display:flex;flex-wrap:wrap;gap:16px;margin-top:8px}
+/* ── Loading / Error ── */
+.loading{text-align:center;padding:60px 20px;color:var(--grey-600);font-size:15px;font-weight:400}
+.error{text-align:center;padding:60px 20px;color:var(--danger-text);font-size:15px}
+/* ── Progress bar ── */
+.progress-bar-outer{width:100%;height:6px;background:var(--grey-300);border-radius:3px;margin:14px 0}
+.progress-bar-inner{height:100%;background:var(--engie-gradient);border-radius:3px;transition:width .2s}
+/* ── YTD table rows ── */
+.ytd-day-row{cursor:pointer;transition:background .1s}
+.ytd-day-row:hover{background:var(--grey-100)}
 .ytd-detail{display:none;background:#fafafa}
-.ytd-detail td{padding-left:28px;color:#6e6e73;font-size:12px}
-.wk-compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
-.wk-compare-col{background:#fff;border-radius:12px;border:.5px solid #e0e0e5;padding:16px}
-.wk-compare-col h4{font-size:14px;font-weight:500;margin-bottom:12px}
-.wk-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:.5px solid #f0f0f5;font-size:13px}
+.ytd-detail td{padding-left:28px;color:var(--grey-600);font-size:12px}
+/* ── Weekend vs Weekday tile ── */
+.wk-compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:0}
+.wk-compare-col{background:var(--grey-100);border-radius:var(--radius);padding:16px;border:1px solid var(--grey-200)}
+.wk-compare-col h4{font-size:15px;font-weight:700;margin-bottom:14px;color:var(--engie-blue)}
+.wk-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--grey-200);font-size:13px}
 .wk-row:last-child{border-bottom:none}
-.wk-label{color:#6e6e73}
-.wk-val{font-weight:500}
-.wk-val.danger{color:#a32d2d}
-.wk-bar-wrap{display:flex;align-items:center;gap:8px;margin-top:8px}
-.wk-bar{height:8px;border-radius:4px;min-width:2px}
-.wk-bar.weekend{background:#8B5CF6}
-.wk-bar.weekday{background:#E24B4A}
-.wk-bar-label{font-size:11px;color:#6e6e73;white-space:nowrap}
-@media(max-width:600px){.wk-compare{grid-template-columns:1fr}}
+.wk-label{color:var(--grey-600);font-weight:400}
+.wk-val{font-weight:700}
+.wk-val.danger{color:var(--engie-red)}
+.wk-bar-wrap{display:flex;align-items:center;gap:8px;margin-top:10px}
+.wk-bar-label{font-size:11px;color:var(--grey-600);white-space:nowrap;font-weight:700}
+@media(max-width:640px){
+  .wk-compare{grid-template-columns:1fr}
+  .header-bar .container{flex-direction:column;align-items:flex-start;gap:4px}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+}
 </style>
 </head>
 <body>
-<div class="container">
-  <h2>Belgian Electricity - Day-Ahead Monitor</h2>
+
+<!-- ENGIE-style gradient header -->
+<div class="header-bar">
+  <div class="container">
+    <div class="logo">ENGIE <span>energy</span></div>
+    <h1>Day-Ahead Price Monitor</h1>
+  </div>
+</div>
+
+<div class="container main">
   <div class="date-nav">
     <button id="btn-today">Today</button>
     <button id="btn-tomorrow">Tomorrow</button>
@@ -80,13 +148,26 @@ tr.neg-row{background:#fff0f0}
   </div>
   <div id="content"><div class="loading">Loading prices...</div></div>
   <div class="footer">
-    <span>Source: griddata.elia.be - BZN|BE Day-Ahead (EPEX SPOT via Elia)</span>
+    <span>Source: griddata.elia.be &mdash; BZN|BE Day-Ahead (EPEX SPOT via Elia)</span>
     <span id="retrieved"></span>
   </div>
 </div>
+
 <script>
 let chart = null;
 let ytdChart = null;
+
+/* ── ENGIE color palette for charts ── */
+const C = {
+  green: '#6ed2b1',       // normal prices
+  yellow: '#fbdb3c',      // low prices
+  red: '#e74a50',         // negative prices
+  blue: '#0079cc',        // primary
+  teal: '#23d2b5',        // accent
+  purple: '#1f106d',      // secondary / weekend
+  lightBlue: '#85B7EB',   // prev year
+  orange: '#d04800',      // accent
+};
 
 /* ── Weekend background plugin for Chart.js ── */
 const weekendBgPlugin = {
@@ -96,7 +177,7 @@ const weekendBgPlugin = {
     if (!meta) return;
     const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
     ctx.save();
-    ctx.fillStyle = 'rgba(139, 92, 246, 0.08)';
+    ctx.fillStyle = 'rgba(31, 16, 109, 0.06)';
     for (let i = 0; i < meta.length; i++) {
       if (!meta[i]) continue;
       const xCenter = x.getPixelForValue(i);
@@ -107,6 +188,11 @@ const weekendBgPlugin = {
   }
 };
 Chart.register(weekendBgPlugin);
+
+/* ── Chart.js global defaults for ENGIE look ── */
+Chart.defaults.font.family = "'Lato', Arial, sans-serif";
+Chart.defaults.font.weight = 400;
+Chart.defaults.color = '#757575';
 
 function beOffset(d) {
   const year = d.getFullYear();
@@ -225,9 +311,9 @@ async function loadData(dateObj) {
   if (hrRuns.length) {
     const details = hrRuns.map((r, i) => {
       const deepest = Math.min(...r.map(s => s.price));
-      return `<div style="margin-bottom:8px"><strong>Run ${i+1}:</strong> ${r[0].label}-${r[r.length-1].label} (${r.length*15}min) | Deepest: ${deepest.toFixed(2)} EUR/MWh</div>`;
+      return `<div style="margin-bottom:8px"><strong>Run ${i+1}:</strong> ${r[0].label}–${r[r.length-1].label} (${r.length*15}min) | Deepest: ${deepest.toFixed(2)} EUR/MWh</div>`;
     }).join('');
-    hrBanner = `<div class="card" style="background:#fff8f0;border-color:#f0d070;"><div class="card-title">Sustained negative runs (>=1h)</div>${details}</div>`;
+    hrBanner = `<div class="card" style="background:var(--warning-bg);border-color:#faebcc"><div class="card-title" style="color:var(--warning-text)">Sustained negative runs (≥1h)</div>${details}</div>`;
   }
 
   let deepBanner = '';
@@ -235,7 +321,7 @@ async function loadData(dateObj) {
     const details = deepNegHours.map(d =>
       `<div style="margin-bottom:8px"><strong>${d.label}</strong> | Avg: ${d.avg.toFixed(2)} EUR/MWh | Slots: ${d.prices.map(p => p.toFixed(2)).join(', ')}</div>`
     ).join('');
-    deepBanner = `<div class="card" style="background:#fef0f0;border-color:#e89090;"><div class="card-title">Full hours with avg <= -10 EUR/MWh</div>${details}</div>`;
+    deepBanner = `<div class="card" style="background:var(--danger-bg);border-color:#ebccd1"><div class="card-title" style="color:var(--danger-text)">Full hours with avg ≤ -10 EUR/MWh</div>${details}</div>`;
   }
 
   const rows = qp.map(p => {
@@ -252,16 +338,16 @@ async function loadData(dateObj) {
       <div class="metric"><div class="metric-label">Max price</div><div class="metric-value">${mx.toFixed(2)} EUR</div></div>
       <div class="metric"><div class="metric-label">Avg price</div><div class="metric-value">${av.toFixed(2)} EUR</div></div>
       <div class="metric"><div class="metric-label">Negative slots</div><div class="metric-value ${negCount>0?'danger':''}">${negCount}</div></div>
-      <div class="metric"><div class="metric-label">>=1h negative runs</div><div class="metric-value ${hrRuns.length>0?'danger':''}">${hrRuns.length}</div></div>
-      <div class="metric"><div class="metric-label">Hours avg <= -10 EUR</div><div class="metric-value ${deepNegHours.length>0?'danger':''}">${deepNegHours.length}</div></div>
+      <div class="metric"><div class="metric-label">≥1h negative runs</div><div class="metric-value ${hrRuns.length>0?'danger':''}">${hrRuns.length}</div></div>
+      <div class="metric"><div class="metric-label">Hours avg ≤ -10</div><div class="metric-value ${deepNegHours.length>0?'danger':''}">${deepNegHours.length}</div></div>
     </div>
     ${hrBanner}
     <div class="card">
       <div class="card-title">15-min price profile (EUR/MWh)</div>
       <div class="legend">
-        <span><span class="legend-dot" style="background:#1D9E75"></span>Normal</span>
-        <span><span class="legend-dot" style="background:#EF9F27"></span>Low (&lt;20)</span>
-        <span><span class="legend-dot" style="background:#E24B4A"></span>Negative</span>
+        <span><span class="legend-dot" style="background:${C.green}"></span>Normal</span>
+        <span><span class="legend-dot" style="background:${C.yellow}"></span>Low (&lt;20)</span>
+        <span><span class="legend-dot" style="background:${C.red}"></span>Negative</span>
       </div>
       <div class="chart-wrap"><canvas id="chart"></canvas></div>
     </div>
@@ -278,16 +364,22 @@ async function loadData(dateObj) {
   if (ytdChart) { ytdChart.destroy(); ytdChart = null; }
   const labels = qp.map(p => p.label);
   const vals = qp.map(p => p.price);
-  const colors = vals.map(v => v < 0 ? '#E24B4A' : v < 20 ? '#EF9F27' : '#1D9E75');
+  const colors = vals.map(v => v < 0 ? C.red : v < 20 ? C.yellow : C.green);
   chart = new Chart(document.getElementById('chart'), {
     type: 'bar',
-    data: { labels, datasets: [{ data: vals, backgroundColor: colors, borderRadius: 2, borderSkipped: false }] },
+    data: { labels, datasets: [{ data: vals, backgroundColor: colors, borderRadius: 3, borderSkipped: false }] },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(2) + ' EUR/MWh' } } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#212121', titleFont: { weight: 700 }, bodyFont: { weight: 400 },
+          callbacks: { label: ctx => ctx.parsed.y.toFixed(2) + ' EUR/MWh' }
+        }
+      },
       scales: {
         x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 24, callback: (v, i) => i % 4 === 0 ? labels[i] : '' } },
-        y: { grid: { color: 'rgba(130,130,130,0.1)' }, ticks: { callback: v => v.toFixed(0) + ' EUR' } }
+        y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { callback: v => v.toFixed(0) + ' €' } }
       }
     }
   });
@@ -381,9 +473,9 @@ async function loadYTD() {
   const totalDays = totalCurrentDays + totalPrevDays;
 
   document.getElementById('content').innerHTML = `
-    <p class="subtitle">Scanning ${year} and ${prevYear} (same period) for full hours with avg &le; -10 EUR/MWh...</p>
+    <p class="subtitle">Scanning ${year} and ${prevYear} (same period) for full hours with avg ≤ -10 EUR/MWh...</p>
     <div class="progress-bar-outer"><div class="progress-bar-inner" id="ytd-progress" style="width:0%"></div></div>
-    <div id="ytd-progress-text" style="font-size:13px;color:#6e6e73;text-align:center;margin-top:8px;">0 / ${totalDays} days</div>
+    <div id="ytd-progress-text" style="font-size:13px;color:var(--grey-600);text-align:center;margin-top:8px;">0 / ${totalDays} days</div>
   `;
 
   let globalDone = 0;
@@ -441,7 +533,6 @@ function renderYTD(allHours, prevYearHours) {
   const wkendPrev = prevYearHours ? prevYearHours.filter(h => isWeekend(h.date)) : [];
   const wkdayPrev = prevYearHours ? prevYearHours.filter(h => !isWeekend(h.date)) : [];
 
-  // Count scanned days to compute rates
   const today = new Date();
   function countDayTypes(yr, endDate) {
     let wkend = 0, wkday = 0;
@@ -463,7 +554,6 @@ function renderYTD(allHours, prevYearHours) {
   const prevWkendRate = prevCounts.wkend > 0 ? (wkendPrev.length / prevCounts.wkend).toFixed(2) : '0';
   const prevWkdayRate = prevCounts.wkday > 0 ? (wkdayPrev.length / prevCounts.wkday).toFixed(2) : '0';
 
-  // Unique days with negative hours
   const curWkendDays = new Set(wkendCur.map(h => h.date)).size;
   const curWkdayDays = new Set(wkdayCur.map(h => h.date)).size;
   const prevWkendDays = new Set(wkendPrev.map(h => h.date)).size;
@@ -471,14 +561,14 @@ function renderYTD(allHours, prevYearHours) {
 
   function pctBar(weekend, weekday) {
     const total = weekend + weekday;
-    if (total === 0) return '<div style="font-size:12px;color:#6e6e73">No negative hours</div>';
+    if (total === 0) return '<div style="font-size:12px;color:var(--grey-500)">No negative hours</div>';
     const wePct = Math.round(weekend / total * 100);
     const wdPct = 100 - wePct;
     return `<div class="wk-bar-wrap">
       <span class="wk-bar-label">${wePct}% wknd</span>
       <div style="flex:1;display:flex;height:8px;border-radius:4px;overflow:hidden">
-        <div style="width:${wePct}%;background:#8B5CF6"></div>
-        <div style="width:${wdPct}%;background:#E24B4A"></div>
+        <div style="width:${wePct}%;background:${C.purple}"></div>
+        <div style="width:${wdPct}%;background:${C.red}"></div>
       </div>
       <span class="wk-bar-label">${wdPct}% wkday</span>
     </div>`;
@@ -486,7 +576,7 @@ function renderYTD(allHours, prevYearHours) {
 
   const weekendTileHtml = `
     <div class="card" style="margin-bottom:20px">
-      <div class="card-title">Weekend vs Weekday — negative hours (avg &le; -10 EUR/MWh)</div>
+      <div class="card-title">Weekend vs Weekday — negative hours (avg ≤ -10 EUR/MWh)</div>
       <div class="wk-compare">
         <div class="wk-compare-col">
           <h4>${year}</h4>
@@ -499,7 +589,7 @@ function renderYTD(allHours, prevYearHours) {
           ${pctBar(wkendCur.length, wkdayCur.length)}
         </div>
         <div class="wk-compare-col">
-          <h4>${prevYear} <span style="font-weight:400;font-size:12px;color:#6e6e73">(same period)</span></h4>
+          <h4>${prevYear} <span style="font-weight:400;font-size:12px;color:var(--grey-600)">(same period)</span></h4>
           <div class="wk-row"><span class="wk-label">Weekend hours</span><span class="wk-val danger">${wkendPrev.length}</span></div>
           <div class="wk-row"><span class="wk-label">Weekday hours</span><span class="wk-val danger">${wkdayPrev.length}</span></div>
           <div class="wk-row"><span class="wk-label">Weekend days affected</span><span class="wk-val">${prevWkendDays} / ${prevCounts.wkend}</span></div>
@@ -534,7 +624,7 @@ function renderYTD(allHours, prevYearHours) {
 
   let metricsHtml = `
     <div class="metrics">
-      <div class="metric"><div class="metric-label">Total hours avg &le; -10 (${year})</div><div class="metric-value danger">${totalHours}</div></div>
+      <div class="metric"><div class="metric-label">Total hours ≤ -10 (${year})</div><div class="metric-value danger">${totalHours}</div></div>
       <div class="metric"><div class="metric-label">Same period ${prevYear}</div><div class="metric-value">${prevTotalHours}</div></div>
       <div class="metric"><div class="metric-label">Deepest hour avg</div><div class="metric-value danger">${deepest.toFixed(0)} EUR</div></div>
       <div class="metric"><div class="metric-label">YoY change</div><div class="metric-value ${diffColor}">${diffLabel}</div></div>
@@ -558,13 +648,13 @@ function renderYTD(allHours, prevYearHours) {
     const dayDeepest = Math.min(...entries.map(e => e.avg));
     const dayName = new Date(dt + 'T12:00:00').toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' });
     const isWe = isWeekend(dt);
-    const weTag = isWe ? ' <span style="font-size:11px;color:#8B5CF6;font-weight:500">WE</span>' : '';
-    const rowStyle = isWe ? ' style="background:rgba(139,92,246,0.04)"' : '';
+    const weTag = isWe ? ` <span style="font-size:11px;color:${C.purple};font-weight:700">WE</span>` : '';
+    const rowStyle = isWe ? ` style="background:rgba(31,16,109,0.03)"` : '';
     tableRows += `<tr class="ytd-day-row" data-date="${dt}"${rowStyle}>
       <td>${dt}</td>
       <td>${dayName}${weTag}</td>
-      <td style="font-weight:500">${entries.length}</td>
-      <td class="danger" style="font-weight:500">${dayDeepest.toFixed(2)}</td>
+      <td style="font-weight:700">${entries.length}</td>
+      <td style="font-weight:700;color:var(--engie-red)">${dayDeepest.toFixed(2)}</td>
       <td>${entries.map(e => e.label).join(', ')}</td>
     </tr>`;
     for (const e of entries) {
@@ -579,17 +669,17 @@ function renderYTD(allHours, prevYearHours) {
   }
 
   document.getElementById('content').innerHTML = `
-    <p class="subtitle">Year-to-date ${year} | Full hours with average &le; -10 EUR/MWh</p>
+    <p class="subtitle">Year-to-date ${year} | Full hours with average ≤ -10 EUR/MWh</p>
     ${metricsHtml}
     ${weekendTileHtml}
     <div class="card">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-        <button id="ytd-back-btn" style="display:none;background:#fff;border:.5px solid #e0e0e5;border-radius:6px;padding:4px 10px;font-size:13px;cursor:pointer;font-family:inherit" onclick="renderMonthlyChart()">&#8592; All months</button>
-        <div class="card-title" id="ytd-chart-title" style="margin-bottom:0">Negative hours by month <span style="font-weight:400;color:#6e6e73">— click a bar to drill down</span></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <button id="ytd-back-btn" style="display:none;background:#fff;border:1px solid var(--grey-300);border-radius:var(--radius-sm);padding:5px 12px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:700;color:var(--engie-blue)" onclick="renderMonthlyChart()">← All months</button>
+        <div class="card-title" id="ytd-chart-title" style="margin-bottom:0">Negative hours by month <span style="font-weight:400;color:var(--grey-600)">— click a bar to drill down</span></div>
       </div>
       <div class="legend" id="ytd-chart-legend">
-        <span><span class="legend-dot" style="background:#E24B4A"></span>${year}</span>
-        <span><span class="legend-dot" style="background:#85B7EB"></span>${prevYear} (same period)</span>
+        <span><span class="legend-dot" style="background:${C.red}"></span>${year}</span>
+        <span><span class="legend-dot" style="background:${C.lightBlue}"></span>${prevYear} (same period)</span>
       </div>
       <div class="chart-wrap"><canvas id="ytd-chart"></canvas></div>
     </div>
@@ -639,10 +729,10 @@ window.renderMonthlyChart = function() {
   const prevYear = window._ytdPrevYear;
 
   document.getElementById('ytd-back-btn').style.display = 'none';
-  document.getElementById('ytd-chart-title').innerHTML = 'Negative hours by month <span style="font-weight:400;color:#6e6e73">— click a bar to drill down</span>';
+  document.getElementById('ytd-chart-title').innerHTML = `Negative hours by month <span style="font-weight:400;color:var(--grey-600)">— click a bar to drill down</span>`;
   document.getElementById('ytd-chart-legend').innerHTML = `
-    <span><span class="legend-dot" style="background:#E24B4A"></span>${year}</span>
-    <span><span class="legend-dot" style="background:#85B7EB"></span>${prevYear} (same period)</span>
+    <span><span class="legend-dot" style="background:${C.red}"></span>${year}</span>
+    <span><span class="legend-dot" style="background:${C.lightBlue}"></span>${prevYear} (same period)</span>
   `;
 
   const cfg = {
@@ -650,8 +740,8 @@ window.renderMonthlyChart = function() {
     data: {
       labels: monthLabels,
       datasets: [
-        { label: String(year), data: monthValues, backgroundColor: '#E24B4A', borderRadius: 4, barPercentage: 0.8, categoryPercentage: 0.6 },
-        { label: String(prevYear), data: prevMonthValues, backgroundColor: '#85B7EB', borderRadius: 4, barPercentage: 0.8, categoryPercentage: 0.6 }
+        { label: String(year), data: monthValues, backgroundColor: C.red, borderRadius: 4, barPercentage: 0.8, categoryPercentage: 0.6 },
+        { label: String(prevYear), data: prevMonthValues, backgroundColor: C.lightBlue, borderRadius: 4, barPercentage: 0.8, categoryPercentage: 0.6 }
       ]
     },
     options: {
@@ -664,15 +754,18 @@ window.renderMonthlyChart = function() {
       },
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + ' hour(s)' } }
+        tooltip: {
+          backgroundColor: '#212121', titleFont: { weight: 700 },
+          callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + ' hour(s)' }
+        }
       },
       scales: {
-        x: { grid: { display: false }, ticks: { autoSkip: false } },
-        y: { beginAtZero: true, ticks: { stepSize: 1, callback: v => Number.isInteger(v) ? v : '' }, title: { display: true, text: 'Full hours' } }
+        x: { grid: { display: false }, ticks: { autoSkip: false, font: { weight: 700 } } },
+        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { stepSize: 1, callback: v => Number.isInteger(v) ? v : '' }, title: { display: true, text: 'Full hours', font: { weight: 700 } } }
       }
     }
   };
-  cfg._weekendFlags = null; // no weekend shading on monthly view
+  cfg._weekendFlags = null;
   ytdChart = new Chart(document.getElementById('ytd-chart'), cfg);
 };
 
@@ -704,7 +797,6 @@ function drillDownMonth(monthKey, monthName) {
     dayDeepest.push(entries.length > 0 ? Math.min(...entries.map(e => e.avg)).toFixed(1) : null);
     prevDayDeepest.push(prevEntries.length > 0 ? Math.min(...prevEntries.map(e => e.avg)).toFixed(1) : null);
 
-    // Weekend detection (use current year for day-of-week)
     const dateObj = new Date(year, m, d);
     const dow = dateObj.getDay();
     weekendFlags.push(dow === 0 || dow === 6);
@@ -713,8 +805,8 @@ function drillDownMonth(monthKey, monthName) {
   document.getElementById('ytd-back-btn').style.display = '';
   document.getElementById('ytd-chart-title').innerHTML = `${monthName} — negative hours per day`;
   document.getElementById('ytd-chart-legend').innerHTML = `
-    <span><span class="legend-dot" style="background:#E24B4A"></span>${year}</span>
-    <span><span class="legend-dot" style="background:#85B7EB"></span>${prevYear}</span>
+    <span><span class="legend-dot" style="background:${C.red}"></span>${year}</span>
+    <span><span class="legend-dot" style="background:${C.lightBlue}"></span>${prevYear}</span>
     <span><span class="legend-stripe"></span>Weekend</span>
   `;
 
@@ -723,8 +815,8 @@ function drillDownMonth(monthKey, monthName) {
     data: {
       labels: dayLabels,
       datasets: [
-        { label: String(year), data: dayValues, backgroundColor: '#E24B4A', borderRadius: 3, barPercentage: 0.8, categoryPercentage: 0.7 },
-        { label: String(prevYear), data: prevDayValues, backgroundColor: '#85B7EB', borderRadius: 3, barPercentage: 0.8, categoryPercentage: 0.7 }
+        { label: String(year), data: dayValues, backgroundColor: C.red, borderRadius: 3, barPercentage: 0.8, categoryPercentage: 0.7 },
+        { label: String(prevYear), data: prevDayValues, backgroundColor: C.lightBlue, borderRadius: 3, barPercentage: 0.8, categoryPercentage: 0.7 }
       ]
     },
     options: {
@@ -732,6 +824,7 @@ function drillDownMonth(monthKey, monthName) {
       plugins: {
         legend: { display: false },
         tooltip: {
+          backgroundColor: '#212121', titleFont: { weight: 700 },
           callbacks: {
             title: ctx => {
               const idx = ctx[0].dataIndex;
@@ -754,8 +847,8 @@ function drillDownMonth(monthKey, monthName) {
           const lbl = dayLabels[i];
           const suffix = weekendFlags[i] ? '*' : '';
           return (lbl % 5 === 1 || lbl === 1) ? lbl + suffix : (weekendFlags[i] ? lbl + '*' : '');
-        }, font: (ctx) => ({ size: 10, weight: weekendFlags[ctx.index] ? 'bold' : 'normal' }) }, title: { display: true, text: 'Day of month (* = weekend)' } },
-        y: { beginAtZero: true, ticks: { stepSize: 1, callback: v => Number.isInteger(v) ? v : '' }, title: { display: true, text: 'Full hours' } }
+        }, font: (ctx) => ({ size: 10, weight: weekendFlags[ctx.index] ? '900' : '400' }) }, title: { display: true, text: 'Day of month (* = weekend)', font: { weight: 700 } } },
+        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { stepSize: 1, callback: v => Number.isInteger(v) ? v : '' }, title: { display: true, text: 'Full hours', font: { weight: 700 } } }
       }
     }
   };

@@ -401,7 +401,7 @@ async function loadData(dateObj) {
           <div class="metric"><span class="metric-icon">&#9644;</span><span class="metric-value">${av.toFixed(2)}</span><div class="metric-label">Avg price (EUR)</div></div>
           <div class="metric"><span class="metric-icon">&#9888;</span><span class="metric-value ${negCount>0?'danger':''}">${negCount}</span><div class="metric-label">Negative slots</div></div>
           <div class="metric"><span class="metric-icon">&#8634;</span><span class="metric-value ${hrRuns.length>0?'danger':''}">${hrRuns.length}</span><div class="metric-label">≥1h neg. runs</div></div>
-          <div class="metric"><span class="metric-icon">&#9760;</span><span class="metric-value ${deepNegHours.length>0?'danger':''}">${deepNegHours.length}</span><div class="metric-label">Hours avg ≤ -10</div></div>
+          <div class="metric"><span class="metric-icon">&#9728;</span><span class="metric-value ${deepNegHours.length>0?'danger':''}">${deepNegHours.length}</span><div class="metric-label">Hours avg ≤ -10</div></div>
         </div>
         ${hrBanner}
       </div>

@@ -592,6 +592,30 @@ function processDayForYTD(dateObj, data) {
   return result;
 }
 
+/* ── Hardcoded manual events ── */
+const MANUAL_EVENTS = [
+  { date: '2026-03-22', hour: 13, flag: 'MKT' },
+];
+
+function extractHourPrices(data, dateStr, targetHour) {
+  const dateObj = new Date(dateStr + 'T12:00:00');
+  const slots = (data || []).filter(s => s.isVisible !== false);
+  if (!slots.length) return null;
+  const offset = beOffset(dateObj); const hourly = {};
+  for (const s of slots) {
+    const dt = new Date(s.dateTime); const local = new Date(dt.getTime() + offset * 3600000);
+    const dLocal = new Date(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate());
+    if (dLocal.getFullYear() === dateObj.getFullYear() && dLocal.getMonth() === dateObj.getMonth() && dLocal.getDate() === dateObj.getDate()) {
+      const h = local.getUTCHours(); if (!hourly[h]) hourly[h] = []; hourly[h].push(Math.round(parseFloat(s.price) * 100) / 100);
+    }
+  }
+  const prices = hourly[targetHour];
+  if (!prices || prices.length !== 4) return null;
+  const avg = Math.round(prices.reduce((a, b) => a + b, 0) / 4 * 100) / 100;
+  const label = targetHour < 23 ? `${pad(targetHour)}:00-${pad(targetHour+1)}:00` : '23:00-00:00';
+  return { date: dateStr, hour: targetHour, label, avg, prices };
+}
+
 async function scanYear(year, endDate, progressCb) {
   const start = new Date(year, 0, 1), end = new Date(endDate), days = [], d = new Date(start);
   while (d <= end) { days.push(new Date(d)); d.setDate(d.getDate() + 1); }
@@ -631,6 +655,24 @@ async function loadYTD() {
   const prevDone = globalDone;
   const currentEnd = new Date(today); currentEnd.setDate(currentEnd.getDate() + 1);
   const currentHours = await scanYear(year, currentEnd, (done, total, found) => { globalDone = prevDone + done; updateProgress(prevHours.length + found); });
+
+  /* Inject hardcoded manual events with real prices */
+  for (const me of MANUAL_EVENTS) {
+    const meYear = parseInt(me.date.slice(0, 4), 10);
+    const target = meYear === year ? currentHours : (meYear === prevYear ? prevHours : null);
+    if (!target) continue;
+    if (target.find(h => h.date === me.date && h.hour === me.hour)) {
+      /* Hour already captured (was ≤ -10), just add the flag */
+      const existing = target.find(h => h.date === me.date && h.hour === me.hour);
+      existing.flag = me.flag;
+    } else {
+      /* Fetch real DA prices for this hour */
+      const dayData = await fetchDay(me.date);
+      const real = extractHourPrices(dayData, me.date, me.hour);
+      if (real) { real.flag = me.flag; target.push(real); }
+      else { target.push({ date: me.date, hour: me.hour, label: me.hour < 23 ? `${pad(me.hour)}:00-${pad(me.hour+1)}:00` : '23:00-00:00', avg: 0, prices: [0,0,0,0], flag: me.flag }); }
+    }
+  }
 
   ytdCache = { current: currentHours, prev: prevHours };
   renderYTD(currentHours, prevHours);
@@ -682,7 +724,9 @@ function renderYTD(allHours, prevYearHours) {
 
   let tableRows = '';
   for (const dt of sortedDates) {
-    const entries = byDate[dt], dayDeepest = Math.min(...entries.map(e => e.avg));
+    const entries = byDate[dt];
+    const realEntries = entries;
+    const dayDeepest = realEntries.length ? Math.min(...realEntries.map(e => e.avg)) : null;
     const dayName = new Date(dt + 'T12:00:00').toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' });
     const isWe = isWeekend(dt);
     const weTag = isWe ? ` <span style="font-size:11px;color:${C.purple};font-weight:700">WE</span>` : '';
@@ -690,18 +734,21 @@ function renderYTD(allHours, prevYearHours) {
     const holTag = holiday ? ` <span style="font-size:11px;color:var(--c-teal);font-weight:700" title="${holiday}">&#127988; ${holiday}</span>` : '';
     const school = isSchoolHoliday(dt);
     const schoolTag = school ? ` <span style="font-size:11px;color:var(--c-orange);font-weight:700" title="${school}">&#127891; ${school}</span>` : '';
-    const rowBg = isWe ? 'rgba(31,16,109,0.03)' : (holiday ? 'rgba(35,210,181,0.05)' : (school ? 'rgba(255,165,0,0.04)' : ''));
+    const dayFlags = [...new Set(entries.filter(e => e.flag).map(e => e.flag))];
+    const flagTags = dayFlags.map(f => ` <span style="font-size:10px;background:var(--c-purple);color:#fff;padding:1px 5px;border-radius:3px;font-weight:700">${f}</span>`).join('');
+    const rowBg = dayFlags.length ? 'rgba(31,16,109,0.06)' : (isWe ? 'rgba(31,16,109,0.03)' : (holiday ? 'rgba(35,210,181,0.05)' : (school ? 'rgba(255,165,0,0.04)' : '')));
     const rowStyle = rowBg ? ` style="background:${rowBg}"` : '';
     /* Start/end hour of event */
     const sortedHours = entries.map(e => e.hour).sort((a, b) => a - b);
     const startHour = pad(sortedHours[0]) + ':00';
     const endHour = pad(sortedHours[sortedHours.length - 1] + 1) + ':00';
     /* DA price stats for event: lowest & avg across all ≤-10 hours */
-    const allSlotPrices = entries.flatMap(e => e.prices);
-    const lowestDA = Math.min(...allSlotPrices).toFixed(2);
-    const avgDA = (allSlotPrices.reduce((a,b) => a+b, 0) / allSlotPrices.length).toFixed(2);
-    tableRows += `<tr class="ytd-day-row" data-date="${dt}"${rowStyle}><td>${dt}</td><td>${dayName}${weTag}${holTag}${schoolTag}</td><td style="font-weight:700">${entries.length}</td><td>${startHour}</td><td>${endHour}</td><td style="font-weight:700;color:var(--c-red)">${dayDeepest.toFixed(2)}</td><td style="color:var(--c-red)">${lowestDA}</td><td>${avgDA}</td><td class="imb-lowest" data-date="${dt}"><span class="imb-loading">…</span></td><td class="imb-avg" data-date="${dt}"><span class="imb-loading">…</span></td></tr>`;
-    for (const e of entries) { tableRows += `<tr class="ytd-detail" data-parent="${dt}"><td></td><td></td><td colspan="2">${e.label}</td><td></td><td>${e.avg.toFixed(2)} EUR/MWh</td><td colspan="4">Slots: ${e.prices.map(p => p.toFixed(2)).join(', ')}</td></tr>`; }
+    const allSlotPrices = realEntries.flatMap(e => e.prices);
+    const lowestDA = allSlotPrices.length ? Math.min(...allSlotPrices).toFixed(2) : '—';
+    const avgDA = allSlotPrices.length ? (allSlotPrices.reduce((a,b) => a+b, 0) / allSlotPrices.length).toFixed(2) : '—';
+    const deepestStr = dayDeepest !== null ? dayDeepest.toFixed(2) : '—';
+    tableRows += `<tr class="ytd-day-row" data-date="${dt}"${rowStyle}><td>${dt}</td><td>${dayName}${weTag}${holTag}${schoolTag}${flagTags}</td><td style="font-weight:700">${entries.length}</td><td>${startHour}</td><td>${endHour}</td><td style="font-weight:700;color:var(--c-red)">${deepestStr}</td><td style="color:var(--c-red)">${lowestDA}</td><td>${avgDA}</td><td class="imb-lowest" data-date="${dt}"><span class="imb-loading">…</span></td><td class="imb-avg" data-date="${dt}"><span class="imb-loading">…</span></td></tr>`;
+    for (const e of entries) { const eflag = e.flag ? ` <span style="font-size:10px;background:var(--c-purple);color:#fff;padding:1px 5px;border-radius:3px;font-weight:700">${e.flag}</span>` : ''; tableRows += `<tr class="ytd-detail" data-parent="${dt}"><td></td><td></td><td colspan="2">${e.label}${eflag}</td><td></td><td>${e.avg.toFixed(2)} EUR/MWh</td><td colspan="4">Slots: ${e.prices.map(p => p.toFixed(2)).join(', ')}</td></tr>`; }
   }
 
   document.getElementById('content').innerHTML = `

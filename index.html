@@ -264,18 +264,18 @@ const C = {
 };
 
 /* ── Weekend background plugin ── */
+let _activeWeekendFlags = null;
 const weekendBgPlugin = {
   id: 'weekendBg',
   beforeDraw(chart) {
-    const meta = chart.config._weekendFlags;
-    if (!meta) return;
+    if (!_activeWeekendFlags) return;
     const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
     ctx.save();
     ctx.fillStyle = 'rgba(31, 16, 109, 0.05)';
-    for (let i = 0; i < meta.length; i++) {
-      if (!meta[i]) continue;
+    for (let i = 0; i < _activeWeekendFlags.length; i++) {
+      if (!_activeWeekendFlags[i]) continue;
       const xCenter = x.getPixelForValue(i);
-      const barWidth = x.width / meta.length;
+      const barWidth = x.width / _activeWeekendFlags.length;
       ctx.fillRect(xCenter - barWidth / 2, top, barWidth, bottom - top);
     }
     ctx.restore();
@@ -828,7 +828,7 @@ window.renderMonthlyChart = function() {
       scales: { x: { grid: { display: false }, ticks: { autoSkip: false, font: { weight: 700 } } }, y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { stepSize: 1, callback: v => Number.isInteger(v) ? v : '' }, title: { display: true, text: 'Full hours', font: { weight: 700 } } } }
     }
   };
-  cfg._weekendFlags = null;
+  _activeWeekendFlags = null;
   ytdChart = new Chart(document.getElementById('ytd-chart'), cfg);
 };
 
@@ -870,7 +870,7 @@ function drillDownMonth(monthKey, monthName) {
       }
     }
   };
-  cfg._weekendFlags = weekendFlags;
+  _activeWeekendFlags = weekendFlags;
   ytdChart = new Chart(document.getElementById('ytd-chart'), cfg);
 }
 

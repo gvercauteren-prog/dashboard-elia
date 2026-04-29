@@ -861,7 +861,8 @@ window.renderMonthlyChart = function() {
 
   document.getElementById('ytd-back-btn').style.display = 'none'; document.getElementById('ytd-back-btn').style.setProperty('display','none','important');
   document.getElementById('ytd-chart-title').innerHTML = `<span class="text-gradient">Negative hours by month</span> <span style="font-weight:400;color:var(--grey-500);font-size:13px">— click a bar to drill down</span>`;
-  document.getElementById('ytd-chart-legend').innerHTML = `<span><span class="legend-dot" style="background:${C.red}"></span>${year}</span><span><span class="legend-dot" style="background:${C.lightBlue}"></span>${prevYear} (same period)</span>`;
+  const mLegendEl = document.getElementById('ytd-chart-legend');
+  mLegendEl.innerHTML = `<span class="legend-toggle" data-idx="0" style="cursor:pointer"><span class="legend-dot" style="background:${C.red}"></span>${year}</span><span class="legend-toggle" data-idx="1" style="cursor:pointer"><span class="legend-dot" style="background:${C.lightBlue}"></span>${prevYear} (same period)</span>`;
 
   const cfg = {
     type: 'bar',
@@ -878,6 +879,17 @@ window.renderMonthlyChart = function() {
   };
   _activeWeekendFlags = null;
   ytdChart = new Chart(document.getElementById('ytd-chart'), cfg);
+
+  mLegendEl.querySelectorAll('.legend-toggle').forEach(el => {
+    el.addEventListener('click', () => {
+      const idx = parseInt(el.dataset.idx, 10);
+      const meta = ytdChart.getDatasetMeta(idx);
+      meta.hidden = !meta.hidden;
+      el.style.opacity = meta.hidden ? '0.35' : '1';
+      el.style.textDecoration = meta.hidden ? 'line-through' : 'none';
+      ytdChart.update();
+    });
+  });
 };
 
 function drillDownMonth(monthKey, monthName) {
@@ -899,7 +911,10 @@ function drillDownMonth(monthKey, monthName) {
 
   document.getElementById('ytd-back-btn').style.setProperty('display','inline-block','important');
   document.getElementById('ytd-chart-title').innerHTML = `<span class="text-gradient">${monthName}</span> — negative hours per day`;
-  document.getElementById('ytd-chart-legend').innerHTML = `<span><span class="legend-dot" style="background:${C.red}"></span>${year}</span><span><span class="legend-dot" style="background:${C.lightBlue}"></span>${prevYear}</span><span><span class="legend-stripe"></span>Weekend ${year}</span><span style="font-weight:700;font-size:12px">* = weekend ${prevYear}</span>`;
+
+  /* Build clickable legend for toggling datasets */
+  const legendEl = document.getElementById('ytd-chart-legend');
+  legendEl.innerHTML = `<span class="legend-toggle" data-idx="0" style="cursor:pointer"><span class="legend-dot" style="background:${C.red}"></span>${year}</span><span class="legend-toggle" data-idx="1" style="cursor:pointer"><span class="legend-dot" style="background:${C.lightBlue}"></span>${prevYear}</span><span><span class="legend-stripe"></span>Weekend ${year}</span><span style="font-weight:700;font-size:12px">* = weekend ${prevYear}</span>`;
 
   const cfg = {
     type: 'bar',
@@ -914,13 +929,25 @@ function drillDownMonth(monthKey, monthName) {
         label: ctx => { const v = ctx.parsed.y, yr = ctx.datasetIndex === 0 ? year : prevYear; if (v === 0) return `${yr}: no negative hours`; const deep = ctx.datasetIndex === 0 ? dayDeepest[ctx.dataIndex] : prevDayDeepest[ctx.dataIndex]; return `${yr}: ${v} hour(s) | deepest avg: ${deep} EUR/MWh`; }
       }}},
       scales: {
-        x: { grid: { display: false }, ticks: { autoSkip: false, callback: (v, i) => { const lbl = dayLabels[i]; const sfx = prevWeekendFlags[i] ? '*' : ''; return (lbl % 5 === 1 || lbl === 1) ? lbl + sfx : (prevWeekendFlags[i] ? lbl + '*' : ''); }, font: (ctx) => ({ size: 10, weight: prevWeekendFlags[ctx.index] ? '900' : '400' }) }, title: { display: true, text: `Day of month (* = weekend ${prevYear})`, font: { weight: 700 } } },
+        x: { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 0, font: { size: 10, weight: (ctx) => prevWeekendFlags[ctx.index] ? '900' : '400' }, callback: (v, i) => { const lbl = dayLabels[i]; const sfx = prevWeekendFlags[i] ? '*' : ''; return lbl + sfx; } }, title: { display: true, text: `Day of month (* = weekend ${prevYear})`, font: { weight: 700 } } },
         y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { stepSize: 1, callback: v => Number.isInteger(v) ? v : '' }, title: { display: true, text: 'Full hours', font: { weight: 700 } } }
       }
     }
   };
   _activeWeekendFlags = weekendFlags;
   ytdChart = new Chart(document.getElementById('ytd-chart'), cfg);
+
+  /* Click legend items to toggle datasets */
+  legendEl.querySelectorAll('.legend-toggle').forEach(el => {
+    el.addEventListener('click', () => {
+      const idx = parseInt(el.dataset.idx, 10);
+      const meta = ytdChart.getDatasetMeta(idx);
+      meta.hidden = !meta.hidden;
+      el.style.opacity = meta.hidden ? '0.35' : '1';
+      el.style.textDecoration = meta.hidden ? 'line-through' : 'none';
+      ytdChart.update();
+    });
+  });
 }
 
 /* ── Navigation ── */

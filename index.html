@@ -692,6 +692,8 @@ function renderYTD(allHours, prevYearHours) {
   const avgHoursPerEvent = eventCount > 0 ? (totalHours / eventCount).toFixed(1) : '0';
   const holidayEventCount = sortedDates.filter(d => isHoliday(d)).length;
   const schoolHolEventCount = sortedDates.filter(d => isSchoolHoliday(d)).length;
+  const allEventAvgs = allHours.map(h => h.avg);
+  const avgDAAllEvents = allEventAvgs.length ? (allEventAvgs.reduce((a, b) => a + b, 0) / allEventAvgs.length).toFixed(1) : '0';
 
   /* Weekend vs weekday */
   const wkendCur = allHours.filter(h => isWeekend(h.date)), wkdayCur = allHours.filter(h => !isWeekend(h.date));
@@ -760,11 +762,10 @@ function renderYTD(allHours, prevYearHours) {
           <div class="metric"><span class="metric-icon" style="color:var(--c-orange);font-weight:900">&#9888;</span><span class="metric-value danger">${totalHours}</span><div class="metric-label">Hours ≤ -10 (${year})</div></div>
           <div class="metric"><span class="metric-icon">&#8634;</span><span class="metric-value">${prevTotalHours}</span><div class="metric-label">Same period ${prevYear}</div></div>
           <div class="metric"><span class="metric-icon" style="color:var(--c-red)">&#9660;</span><span class="metric-value danger">${deepest.toFixed(0)} EUR</span><div class="metric-label">Deepest hour avg</div></div>
+          <div class="metric"><span class="metric-icon" style="color:var(--c-red)">&#8960;</span><span class="metric-value danger">${avgDAAllEvents} EUR</span><div class="metric-label">Avg DA price (events)</div></div>
           <div class="metric"><span class="metric-icon">&#8593;&#8595;</span><span class="metric-value ${diffColor}">${diffLabel}</span><div class="metric-label">YoY change</div></div>
           <div class="metric"><span class="metric-icon" style="color:var(--c-blue)">&#128197;</span><span class="metric-value">${eventCount}</span><div class="metric-label">Event days</div></div>
           <div class="metric"><span class="metric-icon" style="color:var(--c-blue)">&#8960;</span><span class="metric-value">${avgHoursPerEvent}</span><div class="metric-label">Avg hours / event</div></div>
-          <div class="metric"><span class="metric-icon" style="color:var(--c-teal)">&#127988;</span><span class="metric-value">${holidayEventCount}</span><div class="metric-label">On public holidays</div></div>
-          <div class="metric"><span class="metric-icon" style="color:var(--c-orange)">&#127891;</span><span class="metric-value">${schoolHolEventCount}</span><div class="metric-label">During school holidays</div></div>
         </div>
       </div>
     </div>

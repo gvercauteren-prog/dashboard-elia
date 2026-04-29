@@ -352,6 +352,31 @@ function getFlemishHolidays(year) {
 const HOLIDAYS = { ...getFlemishHolidays(2025), ...getFlemishHolidays(2026) };
 function isHoliday(dateStr) { return HOLIDAYS[dateStr] || null; }
 
+/* ── Flemish school holidays ── */
+function getSchoolHolidayPeriods() {
+  // School year 2024-2025
+  // School year 2025-2026
+  return [
+    { from: '2024-10-28', to: '2024-11-03', name: 'Autumn break' },
+    { from: '2024-12-23', to: '2025-01-05', name: 'Christmas break' },
+    { from: '2025-03-03', to: '2025-03-09', name: 'Carnival break' },
+    { from: '2025-04-07', to: '2025-04-21', name: 'Easter break' },
+    { from: '2025-07-01', to: '2025-08-31', name: 'Summer break' },
+    { from: '2025-10-27', to: '2025-11-02', name: 'Autumn break' },
+    { from: '2025-12-22', to: '2026-01-04', name: 'Christmas break' },
+    { from: '2026-02-16', to: '2026-02-22', name: 'Carnival break' },
+    { from: '2026-04-06', to: '2026-04-19', name: 'Easter break' },
+    { from: '2026-07-01', to: '2026-08-31', name: 'Summer break' },
+  ];
+}
+const SCHOOL_HOLIDAYS = getSchoolHolidayPeriods();
+function isSchoolHoliday(dateStr) {
+  for (const p of SCHOOL_HOLIDAYS) {
+    if (dateStr >= p.from && dateStr <= p.to) return p.name;
+  }
+  return null;
+}
+
 /* ── Imbalance price API (Elia Open Data ods134) ── */
 async function fetchImbalanceForDay(dateStr) {
   // ods134: QH imbalance prices from 22/05/2024 onward
@@ -624,6 +649,7 @@ function renderYTD(allHours, prevYearHours) {
   const eventCount = Object.keys(byDate).length;
   const avgHoursPerEvent = eventCount > 0 ? (totalHours / eventCount).toFixed(1) : '0';
   const holidayEventCount = sortedDates.filter(d => isHoliday(d)).length;
+  const schoolHolEventCount = sortedDates.filter(d => isSchoolHoliday(d)).length;
 
   /* Weekend vs weekday */
   const wkendCur = allHours.filter(h => isWeekend(h.date)), wkdayCur = allHours.filter(h => !isWeekend(h.date));
@@ -662,13 +688,20 @@ function renderYTD(allHours, prevYearHours) {
     const weTag = isWe ? ` <span style="font-size:11px;color:${C.purple};font-weight:700">WE</span>` : '';
     const holiday = isHoliday(dt);
     const holTag = holiday ? ` <span style="font-size:11px;color:var(--engie-teal);font-weight:700" title="${holiday}">&#127988; ${holiday}</span>` : '';
-    const rowStyle = isWe ? ` style="background:rgba(31,16,109,0.03)"` : (holiday ? ` style="background:rgba(35,210,181,0.05)"` : '');
+    const school = isSchoolHoliday(dt);
+    const schoolTag = school ? ` <span style="font-size:11px;color:var(--engie-orange);font-weight:700" title="${school}">&#127891; ${school}</span>` : '';
+    const rowBg = isWe ? 'rgba(31,16,109,0.03)' : (holiday ? 'rgba(35,210,181,0.05)' : (school ? 'rgba(255,165,0,0.04)' : ''));
+    const rowStyle = rowBg ? ` style="background:${rowBg}"` : '';
+    /* Start/end hour of event */
+    const sortedHours = entries.map(e => e.hour).sort((a, b) => a - b);
+    const startHour = pad(sortedHours[0]) + ':00';
+    const endHour = pad(sortedHours[sortedHours.length - 1] + 1) + ':00';
     /* DA price stats for event: lowest & avg across all ≤-10 hours */
     const allSlotPrices = entries.flatMap(e => e.prices);
     const lowestDA = Math.min(...allSlotPrices).toFixed(2);
     const avgDA = (allSlotPrices.reduce((a,b) => a+b, 0) / allSlotPrices.length).toFixed(2);
-    tableRows += `<tr class="ytd-day-row" data-date="${dt}"${rowStyle}><td>${dt}</td><td>${dayName}${weTag}${holTag}</td><td style="font-weight:700">${entries.length}</td><td style="font-weight:700;color:var(--engie-red)">${dayDeepest.toFixed(2)}</td><td style="color:var(--engie-red)">${lowestDA}</td><td>${avgDA}</td><td class="imb-lowest" data-date="${dt}"><span class="imb-loading">…</span></td><td class="imb-avg" data-date="${dt}"><span class="imb-loading">…</span></td></tr>`;
-    for (const e of entries) { tableRows += `<tr class="ytd-detail" data-parent="${dt}"><td></td><td></td><td>${e.label}</td><td>${e.avg.toFixed(2)} EUR/MWh</td><td colspan="4">Slots: ${e.prices.map(p => p.toFixed(2)).join(', ')}</td></tr>`; }
+    tableRows += `<tr class="ytd-day-row" data-date="${dt}"${rowStyle}><td>${dt}</td><td>${dayName}${weTag}${holTag}${schoolTag}</td><td style="font-weight:700">${entries.length}</td><td>${startHour}</td><td>${endHour}</td><td style="font-weight:700;color:var(--engie-red)">${dayDeepest.toFixed(2)}</td><td style="color:var(--engie-red)">${lowestDA}</td><td>${avgDA}</td><td class="imb-lowest" data-date="${dt}"><span class="imb-loading">…</span></td><td class="imb-avg" data-date="${dt}"><span class="imb-loading">…</span></td></tr>`;
+    for (const e of entries) { tableRows += `<tr class="ytd-detail" data-parent="${dt}"><td></td><td></td><td colspan="2">${e.label}</td><td></td><td>${e.avg.toFixed(2)} EUR/MWh</td><td colspan="4">Slots: ${e.prices.map(p => p.toFixed(2)).join(', ')}</td></tr>`; }
   }
 
   document.getElementById('content').innerHTML = `
@@ -684,6 +717,7 @@ function renderYTD(allHours, prevYearHours) {
           <div class="metric"><span class="metric-icon" style="color:var(--engie-blue)">&#128197;</span><span class="metric-value">${eventCount}</span><div class="metric-label">Event days</div></div>
           <div class="metric"><span class="metric-icon" style="color:var(--engie-blue)">&#8960;</span><span class="metric-value">${avgHoursPerEvent}</span><div class="metric-label">Avg hours / event</div></div>
           <div class="metric"><span class="metric-icon" style="color:var(--engie-teal)">&#127988;</span><span class="metric-value">${holidayEventCount}</span><div class="metric-label">On public holidays</div></div>
+          <div class="metric"><span class="metric-icon" style="color:var(--engie-orange)">&#127891;</span><span class="metric-value">${schoolHolEventCount}</span><div class="metric-label">During school holidays</div></div>
         </div>
       </div>
     </div>
@@ -735,7 +769,7 @@ function renderYTD(allHours, prevYearHours) {
       <div class="container">
         <div class="card fade-in">
           <div class="card-title"><span class="text-gradient">Daily breakdown ${year}</span> <span style="font-weight:400;color:var(--grey-500);font-size:13px">— click a row to expand</span></div>
-          <div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Day</th><th>Hours</th><th>Deepest avg</th><th>Lowest DA</th><th>Avg DA</th><th>Lowest Imb.</th><th>Avg Imb.</th></tr></thead><tbody>${tableRows}</tbody></table></div>
+          <div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Day</th><th>Hours</th><th>Start</th><th>End</th><th>Deepest avg</th><th>Lowest DA</th><th>Avg DA</th><th>Lowest Imb.</th><th>Avg Imb.</th></tr></thead><tbody>${tableRows}</tbody></table></div>
         </div>
       </div>
     </div>

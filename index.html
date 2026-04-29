@@ -9,18 +9,18 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{
-  ---blue:#0079cc;
-  ---blue-hover:#005a97;
-  ---blue-dark:#003f6a;
-  ---teal:#23d2b5;
-  ---gradient:linear-gradient(132deg,#0079cc -30%,#23d2b5 133%);
-  ---gradient-text:linear-gradient(132deg,#0079cc 0%,#23d2b5 100%);
-  ---purple:#1f106d;
-  ---red:#e74a50;
-  ---orange:#d04800;
-  ---yellow:#fbdb3c;
-  ---green:#6ed2b1;
-  ---green-fun:#4b9726;
+  --engie-blue:#0079cc;
+  --engie-blue-hover:#005a97;
+  --engie-blue-dark:#003f6a;
+  --engie-teal:#23d2b5;
+  --engie-gradient:linear-gradient(132deg,#0079cc -30%,#23d2b5 133%);
+  --engie-gradient-text:linear-gradient(132deg,#0079cc 0%,#23d2b5 100%);
+  --engie-purple:#1f106d;
+  --engie-red:#e74a50;
+  --engie-orange:#d04800;
+  --engie-yellow:#fbdb3c;
+  --engie-green:#6ed2b1;
+  --engie-green-fun:#4b9726;
   --grey-900:#212121;
   --grey-800:#424242;
   --grey-700:#616161;
@@ -42,9 +42,9 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Lato',Arial,sans-serif;background:#fff;color:var(--grey-900);font-weight:400;font-size:14px;line-height:1.6}
 
-/* ──  gradient text (like Happy Hours headings) ── */
+/* ── ENGIE gradient text (like Happy Hours headings) ── */
 .text-gradient{
-  background:var(---gradient-text);
+  background:var(--engie-gradient-text);
   -webkit-background-clip:text;
   -webkit-text-fill-color:transparent;
   background-clip:text;
@@ -76,7 +76,7 @@ body{font-family:'Lato',Arial,sans-serif;background:#fff;color:var(--grey-900);f
 /* ── Container ── */
 .container{max-width:1040px;margin:0 auto;padding:0 24px}
 
-/* ── Alternating sections ( pattern) ── */
+/* ── Alternating sections (ENGIE pattern) ── */
 .section{padding:28px 0}
 .section--grey{background:var(--grey-100)}
 .section--white{background:#fff}
@@ -88,9 +88,9 @@ body{font-family:'Lato',Arial,sans-serif;background:#fff;color:var(--grey-900);f
   padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;
   color:var(--grey-700);transition:all .2s
 }
-.date-nav button:hover{border-color:var(---blue);color:var(---blue);background:#f0f9ff}
+.date-nav button:hover{border-color:var(--engie-blue);color:var(--engie-blue);background:#f0f9ff}
 .date-nav button.active{
-  background:var(---blue);color:#fff;border-color:var(---blue);
+  background:var(--engie-blue);color:#fff;border-color:var(--engie-blue);
   box-shadow:0 2px 8px rgba(0,121,204,.25)
 }
 .date-nav span{font-size:14px;font-weight:700;color:var(--grey-600)}
@@ -124,8 +124,8 @@ body{font-family:'Lato',Arial,sans-serif;background:#fff;color:var(--grey-900);f
 .metric:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.06)}
 .metric-icon{font-size:28px;margin-bottom:8px;display:block}
 .metric-value{font-size:28px;font-weight:900;color:var(--grey-900);display:block;line-height:1.2}
-.metric-value.danger{color:var(---red)}
-.metric-value.positive{color:var(---green-fun)}
+.metric-value.danger{color:var(--engie-red)}
+.metric-value.positive{color:var(--engie-green-fun)}
 .metric-label{font-size:11px;color:var(--grey-600);margin-top:6px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
 
 /* ── Cards ── */
@@ -154,7 +154,7 @@ tr.neg-row{background:var(--danger-bg)}
 /* ── Footer ── */
 .footer-section{background:var(--grey-900);color:var(--grey-400);padding:20px 0}
 .footer-inner{display:flex;flex-wrap:wrap;gap:16px;font-size:12px;align-items:center}
-.footer-inner a{color:var(---teal);text-decoration:none}
+.footer-inner a{color:var(--engie-teal);text-decoration:none}
 
 /* ── Loading / Error ── */
 .loading{text-align:center;padding:60px 20px;color:var(--grey-600);font-size:15px;font-weight:300}
@@ -162,13 +162,15 @@ tr.neg-row{background:var(--danger-bg)}
 
 /* ── Progress bar ── */
 .progress-bar-outer{width:100%;height:6px;background:var(--grey-300);border-radius:3px;margin:14px 0}
-.progress-bar-inner{height:100%;background:var(---gradient);border-radius:3px;transition:width .2s}
+.progress-bar-inner{height:100%;background:var(--engie-gradient);border-radius:3px;transition:width .2s}
 
 /* ── YTD table rows ── */
 .ytd-day-row{cursor:pointer;transition:background .1s}
 .ytd-day-row:hover{background:var(--grey-100)}
 .ytd-detail{display:none;background:#fafafa}
 .ytd-detail td{padding-left:28px;color:var(--grey-600);font-size:12px}
+.imb-loading{color:var(--grey-400);font-size:12px;animation:imbPulse 1s infinite}
+@keyframes imbPulse{0%,100%{opacity:.3}50%{opacity:1}}
 
 /* ── Weekend vs Weekday tile ── */
 .wk-compare{display:grid;grid-template-columns:1fr 1fr;gap:16px}
@@ -180,13 +182,13 @@ tr.neg-row{background:var(--danger-bg)}
 .wk-row:last-child{border-bottom:none}
 .wk-label{color:var(--grey-600)}
 .wk-val{font-weight:700}
-.wk-val.danger{color:var(---red)}
+.wk-val.danger{color:var(--engie-red)}
 .wk-bar-wrap{display:flex;align-items:center;gap:8px;margin-top:12px}
 .wk-bar-label{font-size:11px;color:var(--grey-600);white-space:nowrap;font-weight:700}
 
 /* ── Back button (orange CTA style like Happy Hours) ── */
 .btn-back{
-  display:none;background:var(---orange);color:#fff;
+  display:none;background:var(--engie-orange);color:#fff;
   border:none;border-radius:24px;padding:7px 18px;
   font-size:13px;cursor:pointer;font-family:inherit;font-weight:700;
   transition:background .15s
@@ -209,11 +211,11 @@ tr.neg-row{background:var(--danger-bg)}
 </head>
 <body>
 
-<!-- ─── Hero ( header-product style) ─── -->
+<!-- ─── Hero (ENGIE header-product style) ─── -->
 <div class="hero">
   <div class="container">
     <div class="hero-brand">
-      <div class="hero-logo"></div>
+      <div class="hero-logo">ENGIE <span>energy</span></div>
     </div>
     <h1>Day-Ahead Price Monitor</h1>
     <p>Belgian electricity market clearing prices &mdash; BZN|BE via Elia / EPEX SPOT</p>
@@ -249,7 +251,7 @@ tr.neg-row{background:var(--danger-bg)}
 let chart = null;
 let ytdChart = null;
 
-/* ──  color palette ── */
+/* ── ENGIE color palette ── */
 const C = {
   green: '#6ed2b1',
   yellow: '#fbdb3c',
@@ -312,6 +314,91 @@ function badge(p) {
   if (p < 0) return '<span class="badge badge-neg">Negative</span>';
   if (p < 20) return '<span class="badge badge-low">Low</span>';
   return '<span class="badge badge-ok">Normal</span>';
+}
+
+/* ── Flemish public holidays ── */
+function easterSunday(year) {
+  // Anonymous Gregorian algorithm
+  const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31) - 1;
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month, day);
+}
+
+function getFlemishHolidays(year) {
+  const easter = easterSunday(year);
+  const addDays = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
+  const fmt = d => fmtDate(d);
+  const holidays = {};
+  holidays[`${year}-01-01`] = 'New Year';
+  holidays[fmt(addDays(easter, 1))] = 'Easter Monday';
+  holidays[`${year}-05-01`] = 'Labour Day';
+  holidays[fmt(addDays(easter, 39))] = 'Ascension';
+  holidays[fmt(addDays(easter, 50))] = 'Whit Monday';
+  holidays[`${year}-07-11`] = 'Flemish Day';
+  holidays[`${year}-07-21`] = 'National Day';
+  holidays[`${year}-08-15`] = 'Assumption';
+  holidays[`${year}-11-01`] = 'All Saints';
+  holidays[`${year}-11-11`] = 'Armistice';
+  holidays[`${year}-12-25`] = 'Christmas';
+  return holidays;
+}
+
+const HOLIDAYS = { ...getFlemishHolidays(2025), ...getFlemishHolidays(2026) };
+function isHoliday(dateStr) { return HOLIDAYS[dateStr] || null; }
+
+/* ── Imbalance price API (Elia Open Data ods134) ── */
+async function fetchImbalanceForDay(dateStr) {
+  // ods134: QH imbalance prices from 22/05/2024 onward
+  const url = `https://opendata.elia.be/api/explore/v2.1/catalog/datasets/ods134/records?limit=100&order_by=datetime&where=datetime>='${dateStr}T00:00:00' and datetime<'${dateStr}T23:59:59'`;
+  try {
+    const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    const data = await resp.json();
+    return (data.results || []).map(r => ({
+      datetime: r.datetime,
+      price: r.imbalanceprice
+    }));
+  } catch { return []; }
+}
+
+async function enrichEventsWithImbalance(allHours, byDate) {
+  // For each event day, fetch imbalance prices for the negative hours
+  const eventDays = Object.keys(byDate).sort();
+  const imbalanceData = {};
+  const batchSize = 5;
+  for (let i = 0; i < eventDays.length; i += batchSize) {
+    const batch = eventDays.slice(i, i + batchSize);
+    const results = await Promise.all(batch.map(async (dateStr) => {
+      const imbData = await fetchImbalanceForDay(dateStr);
+      return { dateStr, imbData };
+    }));
+    for (const { dateStr, imbData } of results) {
+      imbalanceData[dateStr] = imbData;
+    }
+  }
+  return imbalanceData;
+}
+
+function getImbalanceForHours(imbDay, hours, offset) {
+  // Match imbalance QH records to the negative hours
+  if (!imbDay || !imbDay.length) return { prices: [], min: null, avg: null };
+  const negHourSet = new Set(hours.map(h => h.hour));
+  const matched = [];
+  for (const rec of imbDay) {
+    const dt = new Date(rec.datetime);
+    const local = new Date(dt.getTime() + offset * 3600000);
+    const h = local.getUTCHours();
+    if (negHourSet.has(h) && rec.price != null) {
+      matched.push(rec.price);
+    }
+  }
+  if (!matched.length) return { prices: matched, min: null, avg: null };
+  return { prices: matched, min: Math.min(...matched), avg: Math.round(matched.reduce((a,b)=>a+b,0)/matched.length*100)/100 };
 }
 
 /* ── Daily view ── */
@@ -397,12 +484,12 @@ async function loadData(dateObj) {
         ${deepBanner}
         ${alertHtml}
         <div class="metrics fade-in">
-          <div class="metric"><span class="metric-icon" style="color:var(---red)">&#9660;</span><span class="metric-value ${mn<0?'danger':''}">${mn.toFixed(2)}</span><div class="metric-label">Min price (EUR)</div></div>
-          <div class="metric"><span class="metric-icon" style="color:var(---green-fun)">&#9650;</span><span class="metric-value">${mx.toFixed(2)}</span><div class="metric-label">Max price (EUR)</div></div>
+          <div class="metric"><span class="metric-icon" style="color:var(--engie-red)">&#9660;</span><span class="metric-value ${mn<0?'danger':''}">${mn.toFixed(2)}</span><div class="metric-label">Min price (EUR)</div></div>
+          <div class="metric"><span class="metric-icon" style="color:var(--engie-green-fun)">&#9650;</span><span class="metric-value">${mx.toFixed(2)}</span><div class="metric-label">Max price (EUR)</div></div>
           <div class="metric"><span class="metric-icon" style="visibility:hidden">&#9650;</span><span class="metric-value">${av.toFixed(2)}</span><div class="metric-label">Avg price (EUR)</div></div>
-          <div class="metric"><span class="metric-icon" style="color:var(---orange);font-weight:900">&#9888;</span><span class="metric-value ${negCount>0?'danger':''}">${negCount}</span><div class="metric-label">Negative slots</div></div>
+          <div class="metric"><span class="metric-icon" style="color:var(--engie-orange);font-weight:900">&#9888;</span><span class="metric-value ${negCount>0?'danger':''}">${negCount}</span><div class="metric-label">Negative slots</div></div>
           <div class="metric"><span class="metric-icon">&#8634;</span><span class="metric-value ${hrRuns.length>0?'danger':''}">${hrRuns.length}</span><div class="metric-label">≥1h neg. runs</div></div>
-          <div class="metric"><span class="metric-icon" style="color:var(---yellow)">&#9728;</span><span class="metric-value ${deepNegHours.length>0?'danger':''}">${deepNegHours.length}</span><div class="metric-label">Hours avg ≤ -10</div></div>
+          <div class="metric"><span class="metric-icon" style="color:var(--engie-yellow)">&#9728;</span><span class="metric-value ${deepNegHours.length>0?'danger':''}">${deepNegHours.length}</span><div class="metric-label">Hours avg ≤ -10</div></div>
         </div>
         ${hrBanner}
       </div>
@@ -533,6 +620,11 @@ function renderYTD(allHours, prevYearHours) {
   const sortedDates = Object.keys(byDate).sort();
   const prevByDate = {}; if (prevYearHours) { for (const h of prevYearHours) { if (!prevByDate[h.date]) prevByDate[h.date] = []; prevByDate[h.date].push(h); } }
 
+  /* Event metrics */
+  const eventCount = Object.keys(byDate).length;
+  const avgHoursPerEvent = eventCount > 0 ? (totalHours / eventCount).toFixed(1) : '0';
+  const holidayEventCount = sortedDates.filter(d => isHoliday(d)).length;
+
   /* Weekend vs weekday */
   const wkendCur = allHours.filter(h => isWeekend(h.date)), wkdayCur = allHours.filter(h => !isWeekend(h.date));
   const wkendPrev = prevYearHours ? prevYearHours.filter(h => isWeekend(h.date)) : [], wkdayPrev = prevYearHours ? prevYearHours.filter(h => !isWeekend(h.date)) : [];
@@ -568,9 +660,15 @@ function renderYTD(allHours, prevYearHours) {
     const dayName = new Date(dt + 'T12:00:00').toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' });
     const isWe = isWeekend(dt);
     const weTag = isWe ? ` <span style="font-size:11px;color:${C.purple};font-weight:700">WE</span>` : '';
-    const rowStyle = isWe ? ` style="background:rgba(31,16,109,0.03)"` : '';
-    tableRows += `<tr class="ytd-day-row" data-date="${dt}"${rowStyle}><td>${dt}</td><td>${dayName}${weTag}</td><td style="font-weight:700">${entries.length}</td><td style="font-weight:700;color:var(---red)">${dayDeepest.toFixed(2)}</td><td>${entries.map(e => e.label).join(', ')}</td></tr>`;
-    for (const e of entries) { tableRows += `<tr class="ytd-detail" data-parent="${dt}"><td></td><td></td><td>${e.label}</td><td>${e.avg.toFixed(2)} EUR/MWh</td><td>Slots: ${e.prices.map(p => p.toFixed(2)).join(', ')}</td></tr>`; }
+    const holiday = isHoliday(dt);
+    const holTag = holiday ? ` <span style="font-size:11px;color:var(--engie-teal);font-weight:700" title="${holiday}">&#127988; ${holiday}</span>` : '';
+    const rowStyle = isWe ? ` style="background:rgba(31,16,109,0.03)"` : (holiday ? ` style="background:rgba(35,210,181,0.05)"` : '');
+    /* DA price stats for event: lowest & avg across all ≤-10 hours */
+    const allSlotPrices = entries.flatMap(e => e.prices);
+    const lowestDA = Math.min(...allSlotPrices).toFixed(2);
+    const avgDA = (allSlotPrices.reduce((a,b) => a+b, 0) / allSlotPrices.length).toFixed(2);
+    tableRows += `<tr class="ytd-day-row" data-date="${dt}"${rowStyle}><td>${dt}</td><td>${dayName}${weTag}${holTag}</td><td style="font-weight:700">${entries.length}</td><td style="font-weight:700;color:var(--engie-red)">${dayDeepest.toFixed(2)}</td><td style="color:var(--engie-red)">${lowestDA}</td><td>${avgDA}</td><td class="imb-lowest" data-date="${dt}"><span class="imb-loading">…</span></td><td class="imb-avg" data-date="${dt}"><span class="imb-loading">…</span></td></tr>`;
+    for (const e of entries) { tableRows += `<tr class="ytd-detail" data-parent="${dt}"><td></td><td></td><td>${e.label}</td><td>${e.avg.toFixed(2)} EUR/MWh</td><td colspan="4">Slots: ${e.prices.map(p => p.toFixed(2)).join(', ')}</td></tr>`; }
   }
 
   document.getElementById('content').innerHTML = `
@@ -579,10 +677,13 @@ function renderYTD(allHours, prevYearHours) {
         <div class="section-title"><span class="text-gradient">Year-to-date ${year}</span></div>
         <p class="subtitle">Full hours with average ≤ -10 EUR/MWh</p>
         <div class="metrics fade-in">
-          <div class="metric"><span class="metric-icon" style="color:var(---orange);font-weight:900">&#9888;</span><span class="metric-value danger">${totalHours}</span><div class="metric-label">Hours ≤ -10 (${year})</div></div>
+          <div class="metric"><span class="metric-icon" style="color:var(--engie-orange);font-weight:900">&#9888;</span><span class="metric-value danger">${totalHours}</span><div class="metric-label">Hours ≤ -10 (${year})</div></div>
           <div class="metric"><span class="metric-icon">&#8634;</span><span class="metric-value">${prevTotalHours}</span><div class="metric-label">Same period ${prevYear}</div></div>
-          <div class="metric"><span class="metric-icon" style="color:var(---red)">&#9660;</span><span class="metric-value danger">${deepest.toFixed(0)} EUR</span><div class="metric-label">Deepest hour avg</div></div>
+          <div class="metric"><span class="metric-icon" style="color:var(--engie-red)">&#9660;</span><span class="metric-value danger">${deepest.toFixed(0)} EUR</span><div class="metric-label">Deepest hour avg</div></div>
           <div class="metric"><span class="metric-icon">&#8593;&#8595;</span><span class="metric-value ${diffColor}">${diffLabel}</span><div class="metric-label">YoY change</div></div>
+          <div class="metric"><span class="metric-icon" style="color:var(--engie-blue)">&#128197;</span><span class="metric-value">${eventCount}</span><div class="metric-label">Event days</div></div>
+          <div class="metric"><span class="metric-icon" style="color:var(--engie-blue)">&#8960;</span><span class="metric-value">${avgHoursPerEvent}</span><div class="metric-label">Avg hours / event</div></div>
+          <div class="metric"><span class="metric-icon" style="color:var(--engie-teal)">&#127988;</span><span class="metric-value">${holidayEventCount}</span><div class="metric-label">On public holidays</div></div>
         </div>
       </div>
     </div>
@@ -634,7 +735,7 @@ function renderYTD(allHours, prevYearHours) {
       <div class="container">
         <div class="card fade-in">
           <div class="card-title"><span class="text-gradient">Daily breakdown ${year}</span> <span style="font-weight:400;color:var(--grey-500);font-size:13px">— click a row to expand</span></div>
-          <table><thead><tr><th>Date</th><th>Day</th><th>Hours</th><th>Deepest avg</th><th>Time slots</th></tr></thead><tbody>${tableRows}</tbody></table>
+          <div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Day</th><th>Hours</th><th>Deepest avg</th><th>Lowest DA</th><th>Avg DA</th><th>Lowest Imb.</th><th>Avg Imb.</th></tr></thead><tbody>${tableRows}</tbody></table></div>
         </div>
       </div>
     </div>
@@ -654,6 +755,21 @@ function renderYTD(allHours, prevYearHours) {
   document.querySelectorAll('.ytd-day-row').forEach(row => {
     row.addEventListener('click', () => { const dt = row.dataset.date; document.querySelectorAll(`.ytd-detail[data-parent="${dt}"]`).forEach(r => { r.style.display = r.style.display === 'table-row' ? 'none' : 'table-row'; }); });
   });
+
+  /* Async imbalance enrichment */
+  (async () => {
+    const offset = beOffset(new Date());
+    const imbalanceData = await enrichEventsWithImbalance(allHours, byDate);
+    for (const dt of sortedDates) {
+      const entries = byDate[dt];
+      const imbDay = imbalanceData[dt] || [];
+      const imbStats = getImbalanceForHours(imbDay, entries, offset);
+      const lowestCell = document.querySelector(`.imb-lowest[data-date="${dt}"]`);
+      const avgCell = document.querySelector(`.imb-avg[data-date="${dt}"]`);
+      if (lowestCell) lowestCell.innerHTML = imbStats.min !== null ? `<span style="color:var(--engie-red);font-weight:700">${imbStats.min.toFixed(2)}</span>` : '<span style="color:var(--grey-500)">n/a</span>';
+      if (avgCell) avgCell.innerHTML = imbStats.avg !== null ? `${imbStats.avg.toFixed(2)}` : '<span style="color:var(--grey-500)">n/a</span>';
+    }
+  })();
 }
 
 /* ── Monthly chart ── */
@@ -661,7 +777,7 @@ window.renderMonthlyChart = function() {
   if (ytdChart) { ytdChart.destroy(); ytdChart = null; }
   const { _ytdMonthLabels: ml, _ytdMonthValues: mv, _ytdPrevMonthValues: pmv, _ytdMonthKeys: mk, _ytdYear: year, _ytdPrevYear: prevYear } = window;
 
-  document.getElementById('ytd-back-btn').style.display = 'none';
+  document.getElementById('ytd-back-btn').style.display = 'none'; document.getElementById('ytd-back-btn').style.setProperty('display','none','important');
   document.getElementById('ytd-chart-title').innerHTML = `<span class="text-gradient">Negative hours by month</span> <span style="font-weight:400;color:var(--grey-500);font-size:13px">— click a bar to drill down</span>`;
   document.getElementById('ytd-chart-legend').innerHTML = `<span><span class="legend-dot" style="background:${C.red}"></span>${year}</span><span><span class="legend-dot" style="background:${C.lightBlue}"></span>${prevYear} (same period)</span>`;
 
@@ -698,7 +814,7 @@ function drillDownMonth(monthKey, monthName) {
     const dow = new Date(year, m, d).getDay(); weekendFlags.push(dow === 0 || dow === 6);
   }
 
-  document.getElementById('ytd-back-btn').style.display = '';
+  document.getElementById('ytd-back-btn').style.setProperty('display','inline-block','important');
   document.getElementById('ytd-chart-title').innerHTML = `<span class="text-gradient">${monthName}</span> — negative hours per day`;
   document.getElementById('ytd-chart-legend').innerHTML = `<span><span class="legend-dot" style="background:${C.red}"></span>${year}</span><span><span class="legend-dot" style="background:${C.lightBlue}"></span>${prevYear}</span><span><span class="legend-stripe"></span>Weekend</span>`;
 

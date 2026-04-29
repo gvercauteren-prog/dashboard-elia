@@ -692,8 +692,8 @@ function renderYTD(allHours, prevYearHours) {
   const avgHoursPerEvent = eventCount > 0 ? (totalHours / eventCount).toFixed(1) : '0';
   const holidayEventCount = sortedDates.filter(d => isHoliday(d)).length;
   const schoolHolEventCount = sortedDates.filter(d => isSchoolHoliday(d)).length;
-  const allEventAvgs = allHours.map(h => h.avg);
-  const avgDAAllEvents = allEventAvgs.length ? (allEventAvgs.reduce((a, b) => a + b, 0) / allEventAvgs.length).toFixed(1) : '0';
+  const dayAvgs = sortedDates.map(dt => { const entries = byDate[dt]; const avgs = entries.map(e => e.avg); return avgs.reduce((a, b) => a + b, 0) / avgs.length; });
+  const avgDAAllEvents = dayAvgs.length ? (dayAvgs.reduce((a, b) => a + b, 0) / dayAvgs.length).toFixed(1) : '0';
 
   /* Weekend vs weekday */
   const wkendCur = allHours.filter(h => isWeekend(h.date)), wkdayCur = allHours.filter(h => !isWeekend(h.date));

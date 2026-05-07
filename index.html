@@ -497,7 +497,7 @@ async function loadData(dateObj) {
   let deepBanner = '';
   if (deepNegHours.length) {
     const details = deepNegHours.map(d => `<div style="margin-bottom:8px"><strong>${d.label}</strong> | Avg: ${d.avg.toFixed(2)} EUR/MWh | Slots: ${d.prices.map(p => p.toFixed(2)).join(', ')}</div>`).join('');
-    deepBanner = `<div class="card fade-in" style="background:var(--danger-bg);border-color:#ebccd1"><div class="card-title" style="color:var(--danger-text)">Full hours with avg ≤ -10 EUR/MWh</div>${details}</div>`;
+    deepBanner = `<div class="card fade-in" style="background:var(--danger-bg);border-color:#ebccd1"><div class="card-title" style="color:var(--danger-text)">Deep negative hours</div>${details}</div>`;
   }
 
   const rows = qp.map(p => { const cls = p.price < 0 ? ' class="neg-row"' : ''; return `<tr${cls}><td>${p.label}</td><td>${p.price.toFixed(2)}</td><td>${badge(p.price)}</td></tr>`; }).join('\n');
@@ -514,7 +514,7 @@ async function loadData(dateObj) {
           <div class="metric"><span class="metric-icon" style="visibility:hidden">&#9650;</span><span class="metric-value">${av.toFixed(2)}</span><div class="metric-label">Avg price (EUR)</div></div>
           <div class="metric"><span class="metric-icon" style="color:var(--c-orange);font-weight:900">&#9888;</span><span class="metric-value ${negCount>0?'danger':''}">${negCount}</span><div class="metric-label">Negative slots</div></div>
           <div class="metric"><span class="metric-icon">&#8634;</span><span class="metric-value ${hrRuns.length>0?'danger':''}">${hrRuns.length}</span><div class="metric-label">≥1h neg. runs</div></div>
-          <div class="metric"><span class="metric-icon" style="color:var(--c-yellow)">&#9728;</span><span class="metric-value ${deepNegHours.length>0?'danger':''}">${deepNegHours.length}</span><div class="metric-label">Hours avg ≤ -10</div></div>
+          <div class="metric"><span class="metric-icon" style="color:var(--c-yellow)">&#9728;</span><span class="metric-value ${deepNegHours.length>0?'danger':''}">${deepNegHours.length}</span><div class="metric-label">Flagged hours</div></div>
         </div>
         ${hrBanner}
       </div>
@@ -643,7 +643,7 @@ async function loadYTD() {
 
   document.getElementById('content').innerHTML = `
     <div class="section section--grey"><div class="container">
-      <p class="subtitle">Scanning ${year} and ${prevYear} (same period) for full hours with avg ≤ -10 EUR/MWh...</p>
+      <p class="subtitle">Scanning ${year} and ${prevYear} (same period) for deep negative hours...</p>
       <div class="progress-bar-outer"><div class="progress-bar-inner" id="ytd-progress" style="width:0%"></div></div>
       <div id="ytd-progress-text" style="font-size:13px;color:var(--grey-600);text-align:center;margin-top:8px;">0 / ${totalDays} days</div>
     </div></div>`;
@@ -757,9 +757,9 @@ function renderYTD(allHours, prevYearHours) {
     <div class="section section--grey">
       <div class="container">
         <div class="section-title"><span class="text-gradient">Year-to-date ${year}</span></div>
-        <p class="subtitle">Full hours with average ≤ -10 EUR/MWh</p>
+        <p class="subtitle">Deep negative hours</p>
         <div class="metrics fade-in">
-          <div class="metric"><span class="metric-icon" style="color:var(--c-orange);font-weight:900">&#9888;</span><span class="metric-value danger">${totalHours}</span><div class="metric-label">Hours ≤ -10 (${year})</div></div>
+          <div class="metric"><span class="metric-icon" style="color:var(--c-orange);font-weight:900">&#9888;</span><span class="metric-value danger">${totalHours}</span><div class="metric-label">Flagged hours (${year})</div></div>
           <div class="metric"><span class="metric-icon">&#8634;</span><span class="metric-value">${prevTotalHours}</span><div class="metric-label">Same period ${prevYear}</div></div>
           <div class="metric"><span class="metric-icon" style="color:var(--c-red)">&#9660;</span><span class="metric-value danger">${deepest.toFixed(0)} EUR</span><div class="metric-label">Deepest hour avg</div></div>
           <div class="metric"><span class="metric-icon" style="color:var(--c-red)">&#8960;</span><span class="metric-value danger">${avgDAAllEvents} EUR</span><div class="metric-label">Avg DA price (events)</div></div>
@@ -772,7 +772,7 @@ function renderYTD(allHours, prevYearHours) {
     <div class="section section--white">
       <div class="container">
         <div class="card fade-in">
-          <div class="card-title"><span class="text-gradient">Weekend vs Weekday</span> — negative hours (avg ≤ -10 EUR/MWh)</div>
+          <div class="card-title"><span class="text-gradient">Weekend vs Weekday</span> — deep negative hours</div>
           <div class="wk-compare">
             <div class="wk-compare-col">
               <h4><span class="text-gradient">${year}</span></h4>

@@ -597,6 +597,11 @@ const MANUAL_EVENTS = [
   { date: '2026-03-22', hour: 13, flag: 'MKT' },
 ];
 
+/* ── Excluded events (suppressed from YTD view) ── */
+const EXCLUDED_EVENTS = [
+  { date: '2026-05-25', hour: 13 },
+];
+
 function extractHourPrices(data, dateStr, targetHour) {
   const dateObj = new Date(dateStr + 'T12:00:00');
   const slots = (data || []).filter(s => s.isVisible !== false);
@@ -672,6 +677,15 @@ async function loadYTD() {
       if (real) { real.flag = me.flag; target.push(real); }
       else { target.push({ date: me.date, hour: me.hour, label: me.hour < 23 ? `${pad(me.hour)}:00-${pad(me.hour+1)}:00` : '23:00-00:00', avg: 0, prices: [0,0,0,0], flag: me.flag }); }
     }
+  }
+
+  /* Remove manually excluded events */
+  for (const ex of EXCLUDED_EVENTS) {
+    const exYear = parseInt(ex.date.slice(0, 4), 10);
+    const target = exYear === year ? currentHours : (exYear === prevYear ? prevHours : null);
+    if (!target) continue;
+    const idx = target.findIndex(h => h.date === ex.date && h.hour === ex.hour);
+    if (idx !== -1) target.splice(idx, 1);
   }
 
   ytdCache = { current: currentHours, prev: prevHours };

@@ -642,7 +642,7 @@ async function loadYTD() {
   document.getElementById('date-label').textContent = '';
   if (chart) { chart.destroy(); chart = null; }
   if (ytdChart) { ytdChart.destroy(); ytdChart = null; }
-  if (ytdCache) { renderYTD(ytdCache.current, ytdCache.prev); return; }
+  if (ytdCache) { renderYTD(ytdCache.current, ytdCache.prev, ytdCache.excluded); return; }
 
   const today = new Date(), year = today.getFullYear(), prevYear = year - 1;
   const prevEndDate = new Date(prevYear, today.getMonth(), today.getDate() + 1);
@@ -683,20 +683,31 @@ async function loadYTD() {
     }
   }
 
-  /* Remove manually excluded events */
+  /* Remove manually excluded events and capture them for the excluded table */
+  const excludedHours = [];
   for (const ex of EXCLUDED_EVENTS) {
     const exYear = parseInt(ex.date.slice(0, 4), 10);
+    if (exYear !== year) continue; /* only show current year exclusions */
     const target = exYear === year ? currentHours : (exYear === prevYear ? prevHours : null);
     if (!target) continue;
     const idx = target.findIndex(h => h.date === ex.date && h.hour === ex.hour);
-    if (idx !== -1) target.splice(idx, 1);
+    if (idx !== -1) {
+      excludedHours.push(target[idx]);
+      target.splice(idx, 1);
+    } else {
+      /* Event was below threshold in scan — fetch real prices */
+      const dayData = await fetchDay(ex.date);
+      const real = extractHourPrices(dayData, ex.date, ex.hour);
+      if (real) excludedHours.push(real);
+      else excludedHours.push({ date: ex.date, hour: ex.hour, label: ex.hour < 23 ? `${pad(ex.hour)}:00-${pad(ex.hour+1)}:00` : '23:00-00:00', avg: null, prices: [] });
+    }
   }
 
-  ytdCache = { current: currentHours, prev: prevHours };
-  renderYTD(currentHours, prevHours);
+  ytdCache = { current: currentHours, prev: prevHours, excluded: excludedHours };
+  renderYTD(currentHours, prevHours, excludedHours);
 }
 
-function renderYTD(allHours, prevYearHours) {
+function renderYTD(allHours, prevYearHours, excludedHours) {
   const year = new Date().getFullYear(), prevYear = year - 1;
   const totalHours = allHours.length, prevTotalHours = prevYearHours ? prevYearHours.length : 0;
   const deepest = totalHours > 0 ? Math.min(...allHours.map(h => h.avg)) : 0;
@@ -839,6 +850,25 @@ function renderYTD(allHours, prevYearHours) {
         </div>
       </div>
     </div>
+    ${(excludedHours && excludedHours.length > 0) ? `
+    <div class="section section--grey">
+      <div class="container">
+        <div class="card fade-in">
+          <div class="card-title"><span class="text-gradient">Excluded hours ${year}</span> <span style="font-weight:400;color:var(--grey-500);font-size:13px">— removed from YTD statistics</span></div>
+          <div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Day</th><th>Hour</th><th>Avg (EUR/MWh)</th><th>Slot prices (EUR/MWh)</th></tr></thead><tbody>${
+            (excludedHours || [])
+              .slice().sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.hour - b.hour)
+              .map(e => {
+                const d = new Date(e.date + 'T12:00:00');
+                const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+                const avgStr = e.avg !== null && e.avg !== undefined ? `<span style="color:var(--c-red);font-weight:700">${e.avg.toFixed(2)}</span>` : '<span style="color:var(--grey-500)">n/a</span>';
+                const slotsStr = e.prices && e.prices.length ? e.prices.map(p => p.toFixed(2)).join(', ') : '—';
+                return `<tr style="background:#fff9f9"><td>${e.date}</td><td>${dayName}</td><td style="font-weight:600">${e.label}</td><td>${avgStr}</td><td style="color:var(--grey-600);font-size:12px">${slotsStr}</td></tr>`;
+              }).join('')
+          }</tbody></table></div>
+        </div>
+      </div>
+    </div>` : ''}
   `;
 
   document.getElementById('retrieved').textContent = 'Scanned: ' + new Date().toISOString().replace(/\.\d+Z/, 'Z');

@@ -854,7 +854,7 @@ function renderYTD(allHours, prevYearHours, excludedHours) {
     <div class="section section--grey">
       <div class="container">
         <div class="card fade-in">
-          <div class="card-title"><span class="text-gradient">Excluded hours ${year}</span> <span style="font-weight:400;color:var(--grey-500);font-size:13px">— removed from YTD statistics</span></div>
+          <div class="card-title" style="display:flex;justify-content:space-between;align-items:center"><span><span class="text-gradient">Excluded hours ${year}</span> <span style="font-weight:400;color:var(--grey-500);font-size:13px">— removed from YTD statistics</span></span><span style="font-size:13px;font-weight:600;color:var(--c-red);background:#fff0f0;border:0.5px solid #f09595;border-radius:6px;padding:3px 10px">${excludedHours.length} hour${excludedHours.length !== 1 ? 's' : ''} excluded</span></div>
           <div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Day</th><th>Hour</th><th>Avg (EUR/MWh)</th><th>Slot prices (EUR/MWh)</th></tr></thead><tbody>${
             (excludedHours || [])
               .slice().sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.hour - b.hour)
